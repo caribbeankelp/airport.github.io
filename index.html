@@ -84,21 +84,27 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js/dist/tesseract.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script>
+        function preprocessImage(imageData) {
+            // Placeholder for advanced preprocessing logic (if required in the future)
+            return imageData;
+        }
+
         function extractImportantInfo(text) {
             const lines = text.split('\n');
             const importantInfo = [];
 
             lines.forEach(line => {
                 line = line.trim();
-                // Extract departure and arrival airports with times
-                const timeMatch = line.match(/\d{1,2}:\d{2}\s?(AM|PM)?/gi);
-                const airportMatch = line.match(/\(([A-Z]{3})\)/g);
-                const airlineMatch = line.match(/(Air Canada|ANA|All Nippon Airways)/i);
-                const layoverMatch = line.match(/(\d+\s?hr\s?\d+\s?min|\d+\s?hours?)/i);
+                // Extract key information
+                const departureTimeMatch = line.match(/\b\d{1,2}:\d{2}\s?(AM|PM)?\b/i);
+                const arrivalTimeMatch = line.match(/\b\d{1,2}:\d{2}\s?(AM|PM)?\b/i);
+                const airportMatch = line.match(/\b[A-Z]{3}\b/g);
+                const airlineMatch = line.match(/\bAir Canada|ANA|All Nippon Airways\b/i);
+                const layoverMatch = line.match(/\b(\d+\s?hr\s?\d+\s?min|\d+\s?hours?)\b/i);
                 const priceMatch = line.match(/€\d+/);
 
-                if (timeMatch && airportMatch) {
-                    importantInfo.push(`Times: ${timeMatch.join(' to ')} Airports: ${airportMatch.join(', ')}`);
+                if (departureTimeMatch && arrivalTimeMatch && airportMatch?.length >= 2) {
+                    importantInfo.push(`Departure: ${airportMatch[0]} at ${departureTimeMatch[0]}, Arrival: ${airportMatch[1]} at ${arrivalTimeMatch[0]}`);
                 }
                 if (airlineMatch) {
                     importantInfo.push(`Airline: ${airlineMatch[0]}`);
@@ -135,8 +141,10 @@
             const file = fileInput.files[0];
             const reader = new FileReader();
             reader.onload = function () {
+                const imageData = preprocessImage(reader.result);
+
                 Tesseract.recognize(
-                    reader.result,
+                    imageData,
                     'eng',
                     {
                         logger: info => console.log(info),
@@ -180,8 +188,10 @@
         function processImage(file) {
             const reader = new FileReader();
             reader.onload = function () {
+                const imageData = preprocessImage(reader.result);
+
                 Tesseract.recognize(
-                    reader.result,
+                    imageData,
                     'eng',
                     {
                         logger: info => console.log(info),
