@@ -104,6 +104,11 @@
             lines.forEach(line => {
                 line = line.trim();
 
+                // Ignore useless information
+                if (/Emissions estimate|\(©\)|\"|\+|USB|In-seat|on demand video/i.test(line)) {
+                    return;
+                }
+
                 if (/\bTue,\s?[A-Za-z]{3}\s\d{1,2}\b/.test(line)) {
                     currentSegment.departureDate = line;
                 }
