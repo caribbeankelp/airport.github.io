@@ -54,6 +54,12 @@
         .result {
             font-size: 18px;
             margin-top: 20px;
+            text-align: left;
+            white-space: pre-wrap;
+            background-color: #fff;
+            color: #000;
+            padding: 15px;
+            border-radius: 5px;
         }
     </style>
 </head>
@@ -100,7 +106,8 @@
                 return;
             }
 
-            document.getElementById('result').innerText = `Processed itinerary: \n${itinerary}`;
+            const formatted = itinerary.split('\n').map(line => `- ${line.trim()}`).join('\n');
+            document.getElementById('result').innerText = `Processed Itinerary:\n\n${formatted}`;
         }
 
         function processPhoto() {
@@ -120,7 +127,8 @@
                         logger: info => console.log(info), // Optional progress logging
                     }
                 ).then(({ data: { text } }) => {
-                    document.getElementById('result').innerText = `Extracted text: \n${text}`;
+                    const formatted = text.split('\n').map(line => `- ${line.trim()}`).join('\n');
+                    document.getElementById('result').innerText = `Extracted Text:\n\n${formatted}`;
                 }).catch(error => {
                     document.getElementById('result').innerText = 'Failed to process the photo.';
                     console.error(error);
@@ -153,7 +161,8 @@
                         logger: info => console.log(info), // Optional progress logging
                     }
                 ).then(({ data: { text } }) => {
-                    document.getElementById('result').innerText = `Extracted text from screenshot: \n${text}`;
+                    const formatted = text.split('\n').map(line => `- ${line.trim()}`).join('\n');
+                    document.getElementById('result').innerText = `Extracted Text from Screenshot:\n\n${formatted}`;
                 }).catch(error => {
                     document.getElementById('result').innerText = 'Failed to process the screenshot.';
                     console.error(error);
