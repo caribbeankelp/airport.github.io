@@ -86,58 +86,32 @@
     <script>
         function extractImportantInfo(text) {
             const lines = text.split('\n');
-            const importantInfo = {
-                departure: null,
-                arrival: null,
-                departureTime: null,
-                arrivalTime: null,
-                totalHours: null,
-                layover: null,
-                airports: [],
-                airline: null,
-                price: null,
-            };
+            const importantInfo = [];
 
             lines.forEach(line => {
-                if (/departure/i.test(line)) {
-                    const match = line.match(/\b[A-Z]{3}\b/);
-                    if (match) importantInfo.departure = match[0];
-                } else if (/arrival/i.test(line)) {
-                    const match = line.match(/\b[A-Z]{3}\b/);
-                    if (match) importantInfo.arrival = match[0];
-                } else if (/time/i.test(line)) {
-                    const times = line.match(/\d{1,2}:\d{2}\s?(AM|PM)?/gi);
-                    if (times && times.length === 2) {
-                        importantInfo.departureTime = times[0];
-                        importantInfo.arrivalTime = times[1];
-                    }
-                } else if (/hours|duration/i.test(line)) {
-                    const match = line.match(/\d+\.?\d*\s?hours?/i);
-                    if (match) importantInfo.totalHours = match[0];
-                } else if (/layover/i.test(line)) {
-                    const match = line.match(/\d+\.?\d*\s?hours?/i);
-                    if (match) importantInfo.layover = match[0];
-                } else if (/airline/i.test(line)) {
-                    importantInfo.airline = line.replace(/.*airline:?\s*/i, '').trim();
-                } else if (/price/i.test(line)) {
-                    const match = line.match(/\$\d+[,.\d]*/);
-                    if (match) importantInfo.price = match[0];
+                line = line.trim();
+                // Extract departure and arrival airports with times
+                const timeMatch = line.match(/\d{1,2}:\d{2}\s?(AM|PM)?/gi);
+                const airportMatch = line.match(/\(([A-Z]{3})\)/g);
+                const airlineMatch = line.match(/(Air Canada|ANA|All Nippon Airways)/i);
+                const layoverMatch = line.match(/(\d+\s?hr\s?\d+\s?min|\d+\s?hours?)/i);
+                const priceMatch = line.match(/€\d+/);
+
+                if (timeMatch && airportMatch) {
+                    importantInfo.push(`Times: ${timeMatch.join(' to ')} Airports: ${airportMatch.join(', ')}`);
+                }
+                if (airlineMatch) {
+                    importantInfo.push(`Airline: ${airlineMatch[0]}`);
+                }
+                if (layoverMatch) {
+                    importantInfo.push(`Layover: ${layoverMatch[0]}`);
+                }
+                if (priceMatch) {
+                    importantInfo.push(`Price: ${priceMatch[0]}`);
                 }
             });
 
-            return importantInfo;
-        }
-
-        function formatImportantInfo(info) {
-            return `
-- Departure: ${info.departure || 'N/A'}
-- Arrival: ${info.arrival || 'N/A'}
-- Departure Time: ${info.departureTime || 'N/A'}
-- Arrival Time: ${info.arrivalTime || 'N/A'}
-- Total Hours: ${info.totalHours || 'N/A'}
-- Layover: ${info.layover || 'N/A'}
-- Airline: ${info.airline || 'N/A'}
-- Price: ${info.price || 'N/A'}`;
+            return importantInfo.join('\n');
         }
 
         function processItinerary() {
@@ -147,8 +121,8 @@
                 return;
             }
 
-            const importantInfo = extractImportantInfo(itinerary);
-            document.getElementById('result').innerText = `Extracted Information:\n${formatImportantInfo(importantInfo)}`;
+            const extractedInfo = extractImportantInfo(itinerary);
+            document.getElementById('result').innerText = `Extracted Information:\n${extractedInfo}`;
         }
 
         function processPhoto() {
@@ -173,8 +147,8 @@
                         return;
                     }
 
-                    const importantInfo = extractImportantInfo(text);
-                    document.getElementById('result').innerText = `Extracted Information from Photo:\n${formatImportantInfo(importantInfo)}`;
+                    const extractedInfo = extractImportantInfo(text);
+                    document.getElementById('result').innerText = `Extracted Information from Photo:\n${extractedInfo}`;
                 }).catch(error => {
                     document.getElementById('result').innerText = 'Failed to process the photo. Ensure the image contains readable text.';
                     console.error('Tesseract.js error:', error);
@@ -218,8 +192,8 @@
                         return;
                     }
 
-                    const importantInfo = extractImportantInfo(text);
-                    document.getElementById('result').innerText = `Extracted Information from Screenshot:\n${formatImportantInfo(importantInfo)}`;
+                    const extractedInfo = extractImportantInfo(text);
+                    document.getElementById('result').innerText = `Extracted Information from Screenshot:\n${extractedInfo}`;
                 }).catch(error => {
                     document.getElementById('result').innerText = 'Failed to process the screenshot. Ensure the image contains readable text.';
                     console.error('Tesseract.js error:', error);
