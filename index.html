@@ -81,19 +81,42 @@
         <div id="result" class="result"></div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js/dist/tesseract.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script>
-        function formatExtractedInfo(infoArray) {
-            return infoArray.map(info => {
-                return (
-                    `${info.departureDate || ''}\n` +
-                    `${info.departureTime || ''} ${info.departureAirport || ''}\n` +
-                    `Travel time: ${info.travelTime || ''}\n` +
-                    `${info.arrivalTime || ''} ${info.arrivalAirport || ''}\n` +
-                    (info.layover ? `${info.layover}\n` : '')
-                ).trim();
-            }).join('\n\n');
+        async function processPhoto() {
+            const fileInput = document.getElementById('photoUpload');
+            if (!fileInput.files.length) {
+                document.getElementById('result').innerText = 'Please upload a photo.';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch('https://api.paddleocr.com/ocr', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to process the image using PaddleOCR API.');
+                }
+
+                const data = await response.json();
+                if (!data || !data.results) {
+                    document.getElementById('result').innerText = 'No text detected in the uploaded photo.';
+                    return;
+                }
+
+                const text = data.results.map(result => result.text).join('\n');
+                const extractedInfo = extractImportantInfo(text);
+                document.getElementById('result').innerText = extractedInfo;
+            } catch (error) {
+                document.getElementById('result').innerText = 'Failed to process the photo. Ensure the image contains readable text.';
+                console.error('PaddleOCR API error:', error);
+            }
         }
 
         function extractImportantInfo(text) {
@@ -105,7 +128,7 @@
                 line = line.trim();
 
                 // Ignore useless information
-                if (/Emissions estimate|\(©\)|\"|\+|USB|In-seat|on demand video/i.test(line)) {
+                if (/Emissions estimate|\(©\)|"|\+|USB|In-seat|on demand video/i.test(line)) {
                     return;
                 }
 
@@ -139,6 +162,18 @@
             return formatExtractedInfo(infoArray);
         }
 
+        function formatExtractedInfo(infoArray) {
+            return infoArray.map(info => {
+                return (
+                    `${info.departureDate || ''}\n` +
+                    `${info.departureTime || ''} ${info.departureAirport || ''}\n` +
+                    `Travel time: ${info.travelTime || ''}\n` +
+                    `${info.arrivalTime || ''} ${info.arrivalAirport || ''}\n` +
+                    (info.layover ? `${info.layover}\n` : '')
+                ).trim();
+            }).join('\n\n');
+        }
+
         function processItinerary() {
             const itinerary = document.getElementById('itinerary').value;
             if (!itinerary) {
@@ -148,89 +183,6 @@
 
             const extractedInfo = extractImportantInfo(itinerary);
             document.getElementById('result').innerText = extractedInfo;
-        }
-
-        function processPhoto() {
-            const fileInput = document.getElementById('photoUpload');
-            if (!fileInput.files.length) {
-                document.getElementById('result').innerText = 'Please upload a photo.';
-                return;
-            }
-
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-            reader.onload = function () {
-                Tesseract.recognize(
-                    reader.result,
-                    'eng',
-                    {
-                        logger: info => console.log(info),
-                    }
-                ).then(({ data: { text } }) => {
-                    if (!text.trim()) {
-                        document.getElementById('result').innerText = 'No text detected in the uploaded photo.';
-                        return;
-                    }
-
-                    const extractedInfo = extractImportantInfo(text);
-                    document.getElementById('result').innerText = extractedInfo;
-                }).catch(error => {
-                    document.getElementById('result').innerText = 'Failed to process the photo. Ensure the image contains readable text.';
-                    console.error('Tesseract.js error:', error);
-                });
-            };
-
-            reader.onerror = function () {
-                document.getElementById('result').innerText = 'Error reading the photo. Please try again.';
-                console.error('FileReader error:', reader.error);
-            };
-
-            reader.readAsDataURL(file);
-        }
-
-        async function captureScreenshot() {
-            try {
-                const screenshotTarget = document.getElementById('screenshotTarget');
-                const canvas = await html2canvas(screenshotTarget);
-                canvas.toBlob(blob => {
-                    const file = new File([blob], "screenshot.png", { type: "image/png" });
-                    processImage(file);
-                });
-            } catch (error) {
-                console.error('Error capturing screenshot:', error);
-                document.getElementById('result').innerText = 'Failed to capture screenshot.';
-            }
-        }
-
-        function processImage(file) {
-            const reader = new FileReader();
-            reader.onload = function () {
-                Tesseract.recognize(
-                    reader.result,
-                    'eng',
-                    {
-                        logger: info => console.log(info),
-                    }
-                ).then(({ data: { text } }) => {
-                    if (!text.trim()) {
-                        document.getElementById('result').innerText = 'No text detected in the screenshot.';
-                        return;
-                    }
-
-                    const extractedInfo = extractImportantInfo(text);
-                    document.getElementById('result').innerText = extractedInfo;
-                }).catch(error => {
-                    document.getElementById('result').innerText = 'Failed to process the screenshot. Ensure the image contains readable text.';
-                    console.error('Tesseract.js error:', error);
-                });
-            };
-
-            reader.onerror = function () {
-                document.getElementById('result').innerText = 'Error reading the screenshot. Please try again.';
-                console.error('FileReader error:', reader.error);
-            };
-
-            reader.readAsDataURL(file);
         }
     </script>
 </body>
