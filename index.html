@@ -100,9 +100,11 @@
 
             lines.forEach(line => {
                 if (/departure/i.test(line)) {
-                    importantInfo.departure = line.match(/\b[A-Z]{3}\b/)[0];
+                    const match = line.match(/\b[A-Z]{3}\b/);
+                    if (match) importantInfo.departure = match[0];
                 } else if (/arrival/i.test(line)) {
-                    importantInfo.arrival = line.match(/\b[A-Z]{3}\b/)[0];
+                    const match = line.match(/\b[A-Z]{3}\b/);
+                    if (match) importantInfo.arrival = match[0];
                 } else if (/time/i.test(line)) {
                     const times = line.match(/\d{1,2}:\d{2}\s?(AM|PM)?/gi);
                     if (times && times.length === 2) {
@@ -110,13 +112,16 @@
                         importantInfo.arrivalTime = times[1];
                     }
                 } else if (/hours|duration/i.test(line)) {
-                    importantInfo.totalHours = line.match(/\d+(\.\d+)?\s?(hours?)/i)?.[0];
+                    const match = line.match(/\d+\.?\d*\s?hours?/i);
+                    if (match) importantInfo.totalHours = match[0];
                 } else if (/layover/i.test(line)) {
-                    importantInfo.layover = line.match(/\d+(\.\d+)?\s?(hours?)/i)?.[0];
+                    const match = line.match(/\d+\.?\d*\s?hours?/i);
+                    if (match) importantInfo.layover = match[0];
                 } else if (/airline/i.test(line)) {
                     importantInfo.airline = line.replace(/.*airline:?\s*/i, '').trim();
                 } else if (/price/i.test(line)) {
-                    importantInfo.price = line.match(/\$\d+[,.\d]*/)?.[0];
+                    const match = line.match(/\$\d+[,.\d]*/);
+                    if (match) importantInfo.price = match[0];
                 }
             });
 
@@ -163,13 +168,24 @@
                         logger: info => console.log(info),
                     }
                 ).then(({ data: { text } }) => {
+                    if (!text.trim()) {
+                        document.getElementById('result').innerText = 'No text detected in the uploaded photo.';
+                        return;
+                    }
+
                     const importantInfo = extractImportantInfo(text);
                     document.getElementById('result').innerText = `Extracted Information from Photo:\n${formatImportantInfo(importantInfo)}`;
                 }).catch(error => {
-                    document.getElementById('result').innerText = 'Failed to process the photo.';
-                    console.error(error);
+                    document.getElementById('result').innerText = 'Failed to process the photo. Ensure the image contains readable text.';
+                    console.error('Tesseract.js error:', error);
                 });
             };
+
+            reader.onerror = function () {
+                document.getElementById('result').innerText = 'Error reading the photo. Please try again.';
+                console.error('FileReader error:', reader.error);
+            };
+
             reader.readAsDataURL(file);
         }
 
@@ -197,13 +213,24 @@
                         logger: info => console.log(info),
                     }
                 ).then(({ data: { text } }) => {
+                    if (!text.trim()) {
+                        document.getElementById('result').innerText = 'No text detected in the screenshot.';
+                        return;
+                    }
+
                     const importantInfo = extractImportantInfo(text);
                     document.getElementById('result').innerText = `Extracted Information from Screenshot:\n${formatImportantInfo(importantInfo)}`;
                 }).catch(error => {
-                    document.getElementById('result').innerText = 'Failed to process the screenshot.';
-                    console.error(error);
+                    document.getElementById('result').innerText = 'Failed to process the screenshot. Ensure the image contains readable text.';
+                    console.error('Tesseract.js error:', error);
                 });
             };
+
+            reader.onerror = function () {
+                document.getElementById('result').innerText = 'Error reading the screenshot. Please try again.';
+                console.error('FileReader error:', reader.error);
+            };
+
             reader.readAsDataURL(file);
         }
     </script>
