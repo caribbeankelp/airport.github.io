@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Self-Transfer Time Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #0072ce; /* Aruba flag blue */
+            color: #fff;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4a900; /* Aruba flag yellow */
+            border-radius: 10px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        textarea {
+            font-size: 16px;
+            margin: 10px 0;
+            padding: 10px;
+            width: 90%;
+            height: 200px;
+            max-width: 500px;
+            border: none;
+            border-radius: 5px;
+            resize: none;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+            padding: 10px;
+            width: 90%;
+            max-width: 500px;
+            border: none;
+            border-radius: 5px;
+            background-color: #fff;
+            color: #000;
+        }
+        button {
+            background-color: #ce1126; /* Aruba flag red */
+            color: #fff;
+            cursor: pointer;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .result {
+            font-size: 18px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Self-Transfer Time Calculator</h1>
+    <div class="container" id="screenshotTarget">
+        <form id="transferForm">
+            <label for="itinerary">Paste Your Itinerary Below:</label><br>
+            <textarea id="itinerary" placeholder="Drag or paste your itinerary information here..."></textarea><br>
+
+            <label for="photoUpload">Or Upload a Photo:</label><br>
+            <input type="file" id="photoUpload" accept="image/*"><br>
+
+            <button type="button" onclick="processItinerary()">Process Itinerary</button>
+            <button type="button" onclick="processPhoto()">Process Photo</button>
+            <button type="button" onclick="captureScreenshot()">Capture Screenshot</button>
+        </form>
+
+        <div id="result" class="result"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script>
+        async function fetchAirports() {
+            try {
+                const response = await fetch('https://raw.githubusercontent.com/jpatokal/openflights/master/data/airports.dat');
+                if (!response.ok) throw new Error('Failed to fetch airport data');
+
+                const data = await response.text();
+                console.log('Airports data fetched successfully.');
+            } catch (error) {
+                console.error('Error loading airport data:', error);
+                document.getElementById('result').innerText = 'Failed to load airport data. Please try again later.';
+            }
+        }
+
+        fetchAirports();
+
+        function processItinerary() {
+            const itinerary = document.getElementById('itinerary').value;
+            if (!itinerary) {
+                document.getElementById('result').innerText = 'Please paste your itinerary information.';
+                return;
+            }
+
+            document.getElementById('result').innerText = `Processed itinerary: \n${itinerary}`;
+        }
+
+        function processPhoto() {
+            const fileInput = document.getElementById('photoUpload');
+            if (!fileInput.files.length) {
+                document.getElementById('result').innerText = 'Please upload a photo.';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function () {
+                Tesseract.recognize(
+                    reader.result,      // Image content
+                    'eng',              // Language (English)
+                    {
+                        logger: info => console.log(info), // Optional progress logging
+                    }
+                ).then(({ data: { text } }) => {
+                    document.getElementById('result').innerText = `Extracted text: \n${text}`;
+                }).catch(error => {
+                    document.getElementById('result').innerText = 'Failed to process the photo.';
+                    console.error(error);
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function captureScreenshot() {
+            try {
+                const screenshotTarget = document.getElementById('screenshotTarget');
+                const canvas = await html2canvas(screenshotTarget);
+                canvas.toBlob(blob => {
+                    const file = new File([blob], "screenshot.png", { type: "image/png" });
+                    processImage(file);
+                });
+            } catch (error) {
+                console.error('Error capturing screenshot:', error);
+                document.getElementById('result').innerText = 'Failed to capture screenshot.';
+            }
+        }
+
+        function processImage(file) {
+            const reader = new FileReader();
+            reader.onload = function () {
+                Tesseract.recognize(
+                    reader.result,      // Image content
+                    'eng',              // Language (English)
+                    {
+                        logger: info => console.log(info), // Optional progress logging
+                    }
+                ).then(({ data: { text } }) => {
+                    document.getElementById('result').innerText = `Extracted text from screenshot: \n${text}`;
+                }).catch(error => {
+                    document.getElementById('result').innerText = 'Failed to process the screenshot.';
+                    console.error(error);
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+    </script>
+</body>
+</html>
