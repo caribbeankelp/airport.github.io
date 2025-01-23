@@ -84,40 +84,48 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js/dist/tesseract.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script>
-        function preprocessImage(imageData) {
-            // Placeholder for advanced preprocessing logic (if required in the future)
-            return imageData;
+        function formatExtractedInfo(infoArray) {
+            return infoArray.map(info => {
+                return (
+                    `${info.departureTime || ''} ${info.departureAirport || ''}\n` +
+                    `Travel time: ${info.travelTime || ''}\n` +
+                    `${info.arrivalTime || ''} ${info.arrivalAirport || ''}\n` +
+                    (info.layover ? `${info.layover}\n` : '')
+                ).trim();
+            }).join('\n\n');
         }
 
         function extractImportantInfo(text) {
             const lines = text.split('\n');
-            const importantInfo = [];
+            const infoArray = [];
+            let currentSegment = {};
 
             lines.forEach(line => {
                 line = line.trim();
-                // Extract key information
-                const departureTimeMatch = line.match(/\b\d{1,2}:\d{2}\s?(AM|PM)?\b/i);
-                const arrivalTimeMatch = line.match(/\b\d{1,2}:\d{2}\s?(AM|PM)?\b/i);
-                const airportMatch = line.match(/\b[A-Z]{3}\b/g);
-                const airlineMatch = line.match(/\bAir Canada|ANA|All Nippon Airways\b/i);
-                const layoverMatch = line.match(/\b(\d+\s?hr\s?\d+\s?min|\d+\s?hours?)\b/i);
-                const priceMatch = line.match(/€\d+/);
-
-                if (departureTimeMatch && arrivalTimeMatch && airportMatch?.length >= 2) {
-                    importantInfo.push(`Departure: ${airportMatch[0]} at ${departureTimeMatch[0]}, Arrival: ${airportMatch[1]} at ${arrivalTimeMatch[0]}`);
-                }
-                if (airlineMatch) {
-                    importantInfo.push(`Airline: ${airlineMatch[0]}`);
-                }
-                if (layoverMatch) {
-                    importantInfo.push(`Layover: ${layoverMatch[0]}`);
-                }
-                if (priceMatch) {
-                    importantInfo.push(`Price: ${priceMatch[0]}`);
+                if (/\d{1,2}:\d{2}\s?(AM|PM)?/.test(line)) {
+                    if (!currentSegment.departureTime) {
+                        const [time, ...rest] = line.split(' ');
+                        currentSegment.departureTime = time;
+                        currentSegment.departureAirport = rest.join(' ');
+                    } else {
+                        const [time, ...rest] = line.split(' ');
+                        currentSegment.arrivalTime = time;
+                        currentSegment.arrivalAirport = rest.join(' ');
+                    }
+                } else if (/Travel time:/.test(line)) {
+                    currentSegment.travelTime = line.replace('Travel time:', '').trim();
+                } else if (/layover/.test(line)) {
+                    currentSegment.layover = line;
+                    infoArray.push(currentSegment);
+                    currentSegment = {};
                 }
             });
 
-            return importantInfo.join('\n');
+            if (Object.keys(currentSegment).length > 0) {
+                infoArray.push(currentSegment);
+            }
+
+            return formatExtractedInfo(infoArray);
         }
 
         function processItinerary() {
@@ -128,7 +136,7 @@
             }
 
             const extractedInfo = extractImportantInfo(itinerary);
-            document.getElementById('result').innerText = `Extracted Information:\n${extractedInfo}`;
+            document.getElementById('result').innerText = extractedInfo;
         }
 
         function processPhoto() {
@@ -141,10 +149,8 @@
             const file = fileInput.files[0];
             const reader = new FileReader();
             reader.onload = function () {
-                const imageData = preprocessImage(reader.result);
-
                 Tesseract.recognize(
-                    imageData,
+                    reader.result,
                     'eng',
                     {
                         logger: info => console.log(info),
@@ -156,7 +162,7 @@
                     }
 
                     const extractedInfo = extractImportantInfo(text);
-                    document.getElementById('result').innerText = `Extracted Information from Photo:\n${extractedInfo}`;
+                    document.getElementById('result').innerText = extractedInfo;
                 }).catch(error => {
                     document.getElementById('result').innerText = 'Failed to process the photo. Ensure the image contains readable text.';
                     console.error('Tesseract.js error:', error);
@@ -188,10 +194,8 @@
         function processImage(file) {
             const reader = new FileReader();
             reader.onload = function () {
-                const imageData = preprocessImage(reader.result);
-
                 Tesseract.recognize(
-                    imageData,
+                    reader.result,
                     'eng',
                     {
                         logger: info => console.log(info),
@@ -203,7 +207,7 @@
                     }
 
                     const extractedInfo = extractImportantInfo(text);
-                    document.getElementById('result').innerText = `Extracted Information from Screenshot:\n${extractedInfo}`;
+                    document.getElementById('result').innerText = extractedInfo;
                 }).catch(error => {
                     document.getElementById('result').innerText = 'Failed to process the screenshot. Ensure the image contains readable text.';
                     console.error('Tesseract.js error:', error);
