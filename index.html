@@ -83,14 +83,6 @@
             return { hours, minutes };
         }
 
-        function calculateTimeDifference(start, end, addDay = false) {
-            const startMinutes = start.hours * 60 + start.minutes;
-            const endMinutes = end.hours * 60 + end.minutes + (addDay ? 1440 : 0);
-
-            const diff = endMinutes - startMinutes;
-            return diff >= 0 ? diff : 1440 + diff; // Handles overnight cases
-        }
-
         function extractInfoFromTicket(text) {
             const lines = text.split('\n');
             const info = {};
@@ -105,11 +97,11 @@
                 if (/\d{1,2}:\d{2}\s?(AM|PM)?/.test(line)) {
                     if (!info.departureTime) {
                         const [time, ...rest] = line.split(' ');
-                        info.departureTime = time + ' ' + rest.pop(); // Handles 'PM' properly
+                        info.departureTime = time + ' ' + rest.pop();
                         info.departureAirport = rest.join(' ');
                     } else {
                         const [time, ...rest] = line.split(' ');
-                        info.arrivalTime = time + ' ' + rest.pop(); // Handles 'AM+1' correctly
+                        info.arrivalTime = time + ' ' + rest.pop();
                         info.arrivalAirport = rest.join(' ');
                     }
                 }
@@ -138,17 +130,23 @@
             const firstArrival = parseTime(firstInfo.arrivalTime);
             const secondDeparture = parseTime(secondInfo.departureTime);
 
-            // Adjust for +1 (next day) if indicated
-            const addDay = firstInfo.nextDay || secondInfo.nextDay;
+            let arrivalMinutes = firstArrival.hours * 60 + firstArrival.minutes;
+            let departureMinutes = secondDeparture.hours * 60 + secondDeparture.minutes;
 
-            // Validate if the second flight departs after the first flight arrives
-            const transferTime = calculateTimeDifference(firstArrival, secondDeparture, addDay);
+            if (firstInfo.arrivalTime.includes('+1')) {
+                arrivalMinutes += 1440; // Add one day in minutes for the arrival
+            }
+            if (secondInfo.departureTime.includes('+1')) {
+                departureMinutes += 1440; // Add one day in minutes for the departure
+            }
 
-            if (transferTime < 0) {
+            if (departureMinutes <= arrivalMinutes) {
                 document.getElementById('result').innerText =
                     'Second flight departs before or at the same time as the first flight arrives. Transfer is not feasible.';
                 return;
             }
+
+            const transferTime = departureMinutes - arrivalMinutes;
 
             const formattedResult = (
                 `First Ticket:\n` +
