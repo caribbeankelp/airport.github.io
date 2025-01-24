@@ -123,7 +123,7 @@
             const firstInfo = extractInfoFromTicket(firstTicket);
             const secondInfo = extractInfoFromTicket(secondTicket);
 
-            if (!firstInfo.arrivalTime || !secondInfo.departureTime) {
+            if (!firstInfo.arrivalTime || !firstInfo.departureTime || !secondInfo.arrivalTime || !secondInfo.departureTime) {
                 document.getElementById('result').innerText = 'Could not extract valid time information from one or both tickets.';
                 return;
             }
@@ -160,8 +160,10 @@
 
             const formattedResult = (
                 `First Ticket:\n` +
-                `Arrival Time: ${firstInfo.arrivalTime || 'N/A'} at ${firstInfo.arrivalAirport || 'N/A'}\n\n` +
+                `Arrival Time: ${firstInfo.arrivalTime || 'N/A'} at ${firstInfo.arrivalAirport || 'N/A'}\n` +
+                `Departure Time: ${firstInfo.departureTime || 'N/A'} from ${firstInfo.departureAirport || 'N/A'}\n\n` +
                 `Second Ticket:\n` +
+                `Arrival Time: ${secondInfo.arrivalTime || 'N/A'} at ${secondInfo.arrivalAirport || 'N/A'}\n` +
                 `Departure Time: ${secondInfo.departureTime || 'N/A'} from ${secondInfo.departureAirport || 'N/A'}\n\n` +
                 `Transfer Time: ${Math.floor(transferTime / 60)} hrs ${transferTime % 60} mins`
             );
