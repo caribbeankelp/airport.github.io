@@ -67,6 +67,25 @@
     </div>
 
     <script>
+        function parseTime(timeStr) {
+            const [time, modifier] = timeStr.split(/\s+/);
+            let [hours, minutes] = time.split(':').map(Number);
+            if (modifier === 'PM' && hours !== 12) {
+                hours += 12;
+            } else if (modifier === 'AM' && hours === 12) {
+                hours = 0;
+            }
+            return { hours, minutes };
+        }
+
+        function calculateTimeDifference(start, end) {
+            const startMinutes = start.hours * 60 + start.minutes;
+            const endMinutes = end.hours * 60 + end.minutes;
+
+            const diff = endMinutes - startMinutes;
+            return diff >= 0 ? diff : 1440 + diff; // Handles overnight cases
+        }
+
         function extractImportantInfo(text) {
             const lines = text.split('\n');
             const infoArray = [];
@@ -107,19 +126,40 @@
                 infoArray.push(currentSegment);
             }
 
-            return formatExtractedInfo(infoArray);
+            return infoArray;
         }
 
         function formatExtractedInfo(infoArray) {
-            return infoArray.map(info => {
-                return (
-                    `${info.departureDate || ''}\n` +
-                    `${info.departureTime || ''} ${info.departureAirport || ''}\n` +
-                    `Travel time: ${info.travelTime || ''}\n` +
-                    `${info.arrivalTime || ''} ${info.arrivalAirport || ''}\n` +
-                    (info.layover ? `${info.layover}\n` : '')
-                ).trim();
-            }).join('\n\n');
+            let formattedInfo = '';
+
+            for (let i = 0; i < infoArray.length - 1; i++) {
+                const current = infoArray[i];
+                const next = infoArray[i + 1];
+
+                const currentArrival = parseTime(current.arrivalTime);
+                const nextDeparture = parseTime(next.departureTime);
+
+                const transferTime = calculateTimeDifference(currentArrival, nextDeparture);
+
+                formattedInfo += (
+                    `${current.departureDate || ''}\n` +
+                    `${current.departureTime || ''} ${current.departureAirport || ''}\n` +
+                    `Travel time: ${current.travelTime || ''}\n` +
+                    `${current.arrivalTime || ''} ${current.arrivalAirport || ''}\n` +
+                    `Layover time: ${Math.floor(transferTime / 60)} hrs ${transferTime % 60} mins\n\n`
+                );
+            }
+
+            // Add the last segment without calculating transfer time
+            const last = infoArray[infoArray.length - 1];
+            formattedInfo += (
+                `${last.departureDate || ''}\n` +
+                `${last.departureTime || ''} ${last.departureAirport || ''}\n` +
+                `Travel time: ${last.travelTime || ''}\n` +
+                `${last.arrivalTime || ''} ${last.arrivalAirport || ''}\n`
+            );
+
+            return formattedInfo.trim();
         }
 
         function processItinerary() {
@@ -130,7 +170,8 @@
             }
 
             const extractedInfo = extractImportantInfo(itinerary);
-            document.getElementById('result').innerText = extractedInfo;
+            const formattedInfo = formatExtractedInfo(extractedInfo);
+            document.getElementById('result').innerText = formattedInfo;
         }
     </script>
 </body>
