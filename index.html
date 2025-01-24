@@ -83,9 +83,9 @@
             return { hours, minutes };
         }
 
-        function calculateTimeDifference(start, end) {
+        function calculateTimeDifference(start, end, addDay = false) {
             const startMinutes = start.hours * 60 + start.minutes;
-            const endMinutes = end.hours * 60 + end.minutes;
+            const endMinutes = end.hours * 60 + end.minutes + (addDay ? 1440 : 0);
 
             const diff = endMinutes - startMinutes;
             return diff >= 0 ? diff : 1440 + diff; // Handles overnight cases
@@ -97,6 +97,10 @@
 
             lines.forEach(line => {
                 line = line.trim();
+
+                if (line.includes('+1')) {
+                    info.nextDay = true;
+                }
 
                 if (/\d{1,2}:\d{2}\s?(AM|PM)?/.test(line)) {
                     if (!info.departureTime) {
@@ -134,14 +138,17 @@
             const firstArrival = parseTime(firstInfo.arrivalTime);
             const secondDeparture = parseTime(secondInfo.departureTime);
 
+            // Adjust for +1 (next day) if indicated
+            const addDay = firstInfo.nextDay || secondInfo.nextDay;
+
             // Validate if the second flight departs after the first flight arrives
-            if (secondDeparture.hours < firstArrival.hours || (secondDeparture.hours === firstArrival.hours && secondDeparture.minutes <= firstArrival.minutes)) {
+            const transferTime = calculateTimeDifference(firstArrival, secondDeparture, addDay);
+
+            if (transferTime < 0) {
                 document.getElementById('result').innerText =
                     'Second flight departs before or at the same time as the first flight arrives. Transfer is not feasible.';
                 return;
             }
-
-            const transferTime = calculateTimeDifference(firstArrival, secondDeparture);
 
             const formattedResult = (
                 `First Ticket:\n` +
