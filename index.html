@@ -136,8 +136,8 @@
             if (firstInfo.arrivalTime.includes('+1')) {
                 arrivalMinutes += 1440; // Add one day in minutes for the arrival
             }
-            if (secondInfo.departureTime.includes('+1')) {
-                departureMinutes += 1440; // Add one day in minutes for the departure
+            if (!firstInfo.arrivalTime.includes('+1') && secondInfo.departureTime.includes('+1')) {
+                departureMinutes += 1440; // Add one day in minutes for the departure if it spans the next day
             }
 
             if (departureMinutes <= arrivalMinutes) {
