@@ -71,32 +71,45 @@
 
     <script>
         function extractInfoFromTicket(text) {
-            const lines = text.split('\n');
             const info = {};
+            const lines = text.split('\n');
 
-            lines.forEach(line => {
-                line = line.trim();
+            function extractTimeAndAirport(line) {
+                const timeRegex = /[0-2]?[0-9]:[0-5][0-9](\s?[APap][Mm])?/;
+                const match = line.match(timeRegex);
+                if (match) {
+                    const time = match[0];
+                    const airport = line.replace(time, '').trim();
+                    return { time, airport };
+                }
+                return null;
+            }
 
-                // Match time in various formats (12-hour or 24-hour)
-                if (/[0-2]?[0-9]:[0-5][0-9](\s?[APap][Mm])?/.test(line)) {
-                    const timeMatch = line.match(/[0-2]?[0-9]:[0-5][0-9](\s?[APap][Mm])?/)[0];
+            function extractDate(line) {
+                const dateRegex = /\b\d{1,2}\/\d{1,2}\/\d{4}\b/;
+                const match = line.match(dateRegex);
+                return match ? match[0] : null;
+            }
+
+            for (const line of lines) {
+                const timeAndAirport = extractTimeAndAirport(line);
+                if (timeAndAirport) {
                     if (!info.arrivalTime) {
-                        info.arrivalTime = timeMatch;
-                        info.arrivalAirport = line.replace(timeMatch, '').trim();
+                        info.arrivalTime = timeAndAirport.time;
+                        info.arrivalAirport = timeAndAirport.airport;
                     } else if (!info.departureTime) {
-                        info.departureTime = timeMatch;
-                        info.departureAirport = line.replace(timeMatch, '').trim();
+                        info.departureTime = timeAndAirport.time;
+                        info.departureAirport = timeAndAirport.airport;
                     }
                 }
 
-                // Match dates
-                if (/\b\d{1,2}\/\d{1,2}\/\d{4}\b/.test(line)) {
-                    const dateMatch = line.match(/\b\d{1,2}\/\d{1,2}\/\d{4}\b/)[0];
-                    if (!info.date) {
-                        info.date = dateMatch;
+                if (!info.date) {
+                    const date = extractDate(line);
+                    if (date) {
+                        info.date = date;
                     }
                 }
-            });
+            }
 
             return info;
         }
@@ -104,6 +117,23 @@
         function combineDateAndTime(date, time) {
             const [month, day, year] = date.split('/');
             return new Date(`${year}-${month}-${day} ${time}`);
+        }
+
+        function formatResult(firstInfo, firstArrival, secondInfo, secondDeparture, transferTimeMinutes) {
+            const hours = Math.floor(transferTimeMinutes / 60);
+            const minutes = transferTimeMinutes % 60;
+
+            return (
+                `First Ticket:\n` +
+                `Arrival Time: ${firstInfo.arrivalTime || 'N/A'} at ${firstInfo.arrivalAirport || 'N/A'}\n` +
+                `Departure Time: ${firstInfo.departureTime || 'N/A'} from ${firstInfo.departureAirport || 'N/A'}\n` +
+                `Date: ${firstInfo.date || 'N/A'}\n\n` +
+                `Second Ticket:\n` +
+                `Arrival Time: ${secondInfo.arrivalTime || 'N/A'} at ${secondInfo.arrivalAirport || 'N/A'}\n` +
+                `Departure Time: ${secondInfo.departureTime || 'N/A'} from ${secondInfo.departureAirport || 'N/A'}\n` +
+                `Date: ${secondInfo.date || 'N/A'}\n\n` +
+                `Transfer Time: ${hours} hrs ${minutes} mins`
+            );
         }
 
         async function processTickets() {
@@ -118,18 +148,22 @@
             const firstInfo = extractInfoFromTicket(firstTicket);
             const secondInfo = extractInfoFromTicket(secondTicket);
 
-            if (!firstInfo.arrivalTime || !firstInfo.date || !secondInfo.departureTime || !secondInfo.date) {
-                document.getElementById('result').innerText = 'Could not extract valid date or time information from one or both tickets.';
+            const missingFields = [];
+            if (!firstInfo.arrivalTime) missingFields.push('First Ticket Arrival Time');
+            if (!firstInfo.date) missingFields.push('First Ticket Date');
+            if (!secondInfo.departureTime) missingFields.push('Second Ticket Departure Time');
+            if (!secondInfo.date) missingFields.push('Second Ticket Date');
+
+            if (missingFields.length > 0) {
+                document.getElementById('result').innerText = `Missing or invalid fields: ${missingFields.join(', ')}.`;
                 return;
             }
 
-            // Combine extracted dates and times
             const firstArrival = combineDateAndTime(firstInfo.date, firstInfo.arrivalTime);
             const secondDeparture = combineDateAndTime(secondInfo.date, secondInfo.departureTime);
 
-            // Handle overnight flights (if the second departure time is earlier than the first arrival time)
             if (secondDeparture <= firstArrival) {
-                secondDeparture.setDate(secondDeparture.getDate() + 1); // Move second departure to the next day
+                secondDeparture.setDate(secondDeparture.getDate() + 1);
             }
 
             try {
@@ -141,21 +175,7 @@
                     return;
                 }
 
-                const hours = Math.floor(transferTimeMinutes / 60);
-                const minutes = transferTimeMinutes % 60;
-
-                const formattedResult = (
-                    `First Ticket:\n` +
-                    `Arrival Time: ${firstInfo.arrivalTime || 'N/A'} at ${firstInfo.arrivalAirport || 'N/A'}\n` +
-                    `Departure Time: ${firstInfo.departureTime || 'N/A'} from ${firstInfo.departureAirport || 'N/A'}\n` +
-                    `Date: ${firstInfo.date || 'N/A'}\n\n` +
-                    `Second Ticket:\n` +
-                    `Arrival Time: ${secondInfo.arrivalTime || 'N/A'} at ${secondInfo.arrivalAirport || 'N/A'}\n` +
-                    `Departure Time: ${secondInfo.departureTime || 'N/A'} from ${secondInfo.departureAirport || 'N/A'}\n` +
-                    `Date: ${secondInfo.date || 'N/A'}\n\n` +
-                    `Transfer Time: ${hours} hrs ${minutes} mins`
-                );
-
+                const formattedResult = formatResult(firstInfo, firstArrival, secondInfo, secondDeparture, transferTimeMinutes);
                 document.getElementById('result').innerText = formattedResult;
             } catch (error) {
                 document.getElementById('result').innerText = `Error: ${error.message}`;
