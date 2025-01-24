@@ -71,10 +71,6 @@
 
     <script>
         async function validateDates(firstArrival, secondDeparture) {
-            const options = {
-                timeZone: 'UTC',
-                hour12: false,
-            };
             const firstArrivalDate = new Date(firstArrival);
             const secondDepartureDate = new Date(secondDeparture);
 
@@ -92,14 +88,15 @@
             lines.forEach(line => {
                 line = line.trim();
 
-                if (/\d{1,2}:[0-5][0-9]\s?(AM|PM)/i.test(line)) {
-                    const timeMatch = line.match(/\d{1,2}:[0-5][0-9]\s?(AM|PM)/i)[0];
+                // Match time in various formats (12-hour or 24-hour)
+                if (/\d{1,2}:[0-5][0-9](\s?(AM|PM))?/i.test(line)) {
+                    const timeMatch = line.match(/\d{1,2}:[0-5][0-9](\s?(AM|PM))?/i)[0];
                     if (!info.arrivalTime) {
                         info.arrivalTime = timeMatch;
-                        info.arrivalAirport = line.split(timeMatch)[1].trim();
+                        info.arrivalAirport = line.split(timeMatch)[1]?.trim() || '';
                     } else if (!info.departureTime) {
                         info.departureTime = timeMatch;
-                        info.departureAirport = line.split(timeMatch)[1].trim();
+                        info.departureAirport = line.split(timeMatch)[1]?.trim() || '';
                     }
                 }
             });
@@ -124,19 +121,32 @@
                 return;
             }
 
-            const firstArrival = new Date(`${firstInfo.arrivalTime}`);
-            const secondDeparture = new Date(`${secondInfo.departureTime}`);
+            // Get the current date
+            const currentDate = new Date();
+            const currentDateString = currentDate.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+
+            // Combine date with time
+            const firstArrivalString = `${currentDateString} ${firstInfo.arrivalTime}`;
+            const secondDepartureString = `${currentDateString} ${secondInfo.departureTime}`;
+
+            // Create Date objects
+            const firstArrival = new Date(firstArrivalString);
+            const secondDeparture = new Date(secondDepartureString);
+
+            // Handle overnight flights (if the second departure time is earlier than the first arrival time)
+            if (secondDeparture <= firstArrival) {
+                secondDeparture.setDate(secondDeparture.getDate() + 1); // Move second departure to the next day
+            }
 
             try {
-                const isFeasible = await validateDates(firstArrival, secondDeparture);
+                const transferTimeMinutes = (secondDeparture - firstArrival) / (1000 * 60);
 
-                if (!isFeasible) {
+                if (transferTimeMinutes <= 0) {
                     document.getElementById('result').innerText =
                         'Second flight departs before or at the same time as the first flight arrives. Transfer is not feasible.';
                     return;
                 }
 
-                const transferTimeMinutes = (secondDeparture - firstArrival) / (1000 * 60);
                 const hours = Math.floor(transferTimeMinutes / 60);
                 const minutes = transferTimeMinutes % 60;
 
