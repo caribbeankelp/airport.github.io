@@ -162,7 +162,11 @@
             const firstArrival = combineDateAndTime(firstInfo.date, firstInfo.arrivalTime);
             const secondDeparture = combineDateAndTime(secondInfo.date, secondInfo.departureTime);
 
-            if (secondDeparture <= firstArrival) {
+            if (secondDeparture.getTime() === firstArrival.getTime()) {
+                document.getElementById('result').innerText =
+                    'Second flight departs at the same time as the first flight arrives. Transfer is not feasible.';
+                return;
+            } else if (secondDeparture < firstArrival) {
                 secondDeparture.setDate(secondDeparture.getDate() + 1);
             }
 
@@ -171,7 +175,7 @@
 
                 if (transferTimeMinutes <= 0) {
                     document.getElementById('result').innerText =
-                        'Second flight departs before or at the same time as the first flight arrives. Transfer is not feasible.';
+                        'Second flight departs before the first flight arrives. Transfer is not feasible.';
                     return;
                 }
 
