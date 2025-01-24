@@ -27,7 +27,7 @@
             margin: 10px 0;
             padding: 10px;
             width: 90%;
-            height: 200px;
+            height: 100px;
             max-width: 500px;
             border: none;
             border-radius: 5px;
@@ -57,10 +57,13 @@
     <h1>Self-Transfer Time Calculator</h1>
     <div class="container">
         <form id="transferForm">
-            <label for="itinerary">Paste Your Itinerary Below:</label><br>
-            <textarea id="itinerary" placeholder="Drag or paste your itinerary information here..."></textarea><br>
+            <label for="firstTicket">Paste Your First Ticket Information Below:</label><br>
+            <textarea id="firstTicket" placeholder="Paste your first ticket details..."></textarea><br>
 
-            <button type="button" onclick="processItinerary()">Process Itinerary</button>
+            <label for="secondTicket">Paste Your Second Ticket Information Below:</label><br>
+            <textarea id="secondTicket" placeholder="Paste your second ticket details..."></textarea><br>
+
+            <button type="button" onclick="processTickets()">Calculate Transfer Time</button>
         </form>
 
         <div id="result" class="result"></div>
@@ -86,92 +89,60 @@
             return diff >= 0 ? diff : 1440 + diff; // Handles overnight cases
         }
 
-        function extractImportantInfo(text) {
+        function extractInfoFromTicket(text) {
             const lines = text.split('\n');
-            const infoArray = [];
-            let currentSegment = {};
+            const info = {};
 
             lines.forEach(line => {
                 line = line.trim();
 
-                // Ignore useless information
-                if (/Emissions estimate|\(©\)|"|\+|USB|In-seat|on demand video/i.test(line)) {
-                    return;
-                }
-
-                if (/\bTue,\s?[A-Za-z]{3}\s\d{1,2}\b/.test(line)) {
-                    currentSegment.departureDate = line;
-                }
-
                 if (/\d{1,2}:\d{2}\s?(AM|PM)?/.test(line)) {
-                    if (!currentSegment.departureTime) {
+                    if (!info.departureTime) {
                         const [time, ...rest] = line.split(' ');
-                        currentSegment.departureTime = time;
-                        currentSegment.departureAirport = rest.join(' ');
+                        info.departureTime = time;
+                        info.departureAirport = rest.join(' ');
                     } else {
                         const [time, ...rest] = line.split(' ');
-                        currentSegment.arrivalTime = time;
-                        currentSegment.arrivalAirport = rest.join(' ');
+                        info.arrivalTime = time;
+                        info.arrivalAirport = rest.join(' ');
                     }
-                } else if (/Travel time:/.test(line)) {
-                    currentSegment.travelTime = line.replace('Travel time:', '').trim();
-                } else if (/layover/.test(line)) {
-                    currentSegment.layover = line;
-                    infoArray.push(currentSegment);
-                    currentSegment = {};
                 }
             });
 
-            if (Object.keys(currentSegment).length > 0) {
-                infoArray.push(currentSegment);
-            }
-
-            return infoArray;
+            return info;
         }
 
-        function formatExtractedInfo(infoArray) {
-            let formattedInfo = '';
+        function processTickets() {
+            const firstTicket = document.getElementById('firstTicket').value;
+            const secondTicket = document.getElementById('secondTicket').value;
 
-            for (let i = 0; i < infoArray.length - 1; i++) {
-                const current = infoArray[i];
-                const next = infoArray[i + 1];
-
-                const currentArrival = parseTime(current.arrivalTime);
-                const nextDeparture = parseTime(next.departureTime);
-
-                const transferTime = calculateTimeDifference(currentArrival, nextDeparture);
-
-                formattedInfo += (
-                    `${current.departureDate || ''}\n` +
-                    `${current.departureTime || ''} ${current.departureAirport || ''}\n` +
-                    `Travel time: ${current.travelTime || ''}\n` +
-                    `${current.arrivalTime || ''} ${current.arrivalAirport || ''}\n` +
-                    `Layover time: ${Math.floor(transferTime / 60)} hrs ${transferTime % 60} mins\n\n`
-                );
-            }
-
-            // Add the last segment without calculating transfer time
-            const last = infoArray[infoArray.length - 1];
-            formattedInfo += (
-                `${last.departureDate || ''}\n` +
-                `${last.departureTime || ''} ${last.departureAirport || ''}\n` +
-                `Travel time: ${last.travelTime || ''}\n` +
-                `${last.arrivalTime || ''} ${last.arrivalAirport || ''}\n`
-            );
-
-            return formattedInfo.trim();
-        }
-
-        function processItinerary() {
-            const itinerary = document.getElementById('itinerary').value;
-            if (!itinerary) {
-                document.getElementById('result').innerText = 'Please paste your itinerary information.';
+            if (!firstTicket || !secondTicket) {
+                document.getElementById('result').innerText = 'Please provide both tickets information.';
                 return;
             }
 
-            const extractedInfo = extractImportantInfo(itinerary);
-            const formattedInfo = formatExtractedInfo(extractedInfo);
-            document.getElementById('result').innerText = formattedInfo;
+            const firstInfo = extractInfoFromTicket(firstTicket);
+            const secondInfo = extractInfoFromTicket(secondTicket);
+
+            if (!firstInfo.arrivalTime || !secondInfo.departureTime) {
+                document.getElementById('result').innerText = 'Could not extract valid time information from one or both tickets.';
+                return;
+            }
+
+            const firstArrival = parseTime(firstInfo.arrivalTime);
+            const secondDeparture = parseTime(secondInfo.departureTime);
+
+            const transferTime = calculateTimeDifference(firstArrival, secondDeparture);
+
+            const formattedResult = (
+                `First Ticket:\n` +
+                `Arrival Time: ${firstInfo.arrivalTime || 'N/A'} at ${firstInfo.arrivalAirport || 'N/A'}\n\n` +
+                `Second Ticket:\n` +
+                `Departure Time: ${secondInfo.departureTime || 'N/A'} from ${secondInfo.departureAirport || 'N/A'}\n\n` +
+                `Transfer Time: ${Math.floor(transferTime / 60)} hrs ${transferTime % 60} mins`
+            );
+
+            document.getElementById('result').innerText = formattedResult;
         }
     </script>
 </body>
