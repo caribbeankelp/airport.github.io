@@ -144,7 +144,13 @@
                 arrivalMinutes -= 1440; // Subtract one day in minutes for arrival
             }
 
-            if (secondDeparture.minutes < arrivalMinutes) {
+            // Adjust for +1 in departure time if present
+            if (secondInfo.departureTime.includes('+1')) {
+                departureMinutes += 1440;
+            }
+
+            // Validate if the second flight departs after the first flight arrives
+            if (departureMinutes <= arrivalMinutes) {
                 document.getElementById('result').innerText =
                     'Second flight departs before or at the same time as the first flight arrives. Transfer is not feasible.';
                 return;
