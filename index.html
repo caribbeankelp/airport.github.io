@@ -78,8 +78,8 @@
                 line = line.trim();
 
                 // Match time in various formats (12-hour or 24-hour)
-                if (/[0-2]?\d:[0-5]\d(\s?[APap][Mm])?/.test(line)) {
-                    const timeMatch = line.match(/[0-2]?\d:[0-5]\d(\s?[APap][Mm])?/)[0];
+                if (/[0-2]?[0-9]:[0-5][0-9](\s?[APap][Mm])?/.test(line)) {
+                    const timeMatch = line.match(/[0-2]?[0-9]:[0-5][0-9](\s?[APap][Mm])?/)[0];
                     if (!info.arrivalTime) {
                         info.arrivalTime = timeMatch;
                         info.arrivalAirport = line.replace(timeMatch, '').trim();
@@ -88,9 +88,22 @@
                         info.departureAirport = line.replace(timeMatch, '').trim();
                     }
                 }
+
+                // Match dates
+                if (/\b\d{1,2}\/\d{1,2}\/\d{4}\b/.test(line)) {
+                    const dateMatch = line.match(/\b\d{1,2}\/\d{1,2}\/\d{4}\b/)[0];
+                    if (!info.date) {
+                        info.date = dateMatch;
+                    }
+                }
             });
 
             return info;
+        }
+
+        function combineDateAndTime(date, time) {
+            const [month, day, year] = date.split('/');
+            return new Date(`${year}-${month}-${day} ${time}`);
         }
 
         async function processTickets() {
@@ -105,22 +118,14 @@
             const firstInfo = extractInfoFromTicket(firstTicket);
             const secondInfo = extractInfoFromTicket(secondTicket);
 
-            if (!firstInfo.arrivalTime || !secondInfo.departureTime) {
-                document.getElementById('result').innerText = 'Could not extract valid time information from one or both tickets.';
+            if (!firstInfo.arrivalTime || !firstInfo.date || !secondInfo.departureTime || !secondInfo.date) {
+                document.getElementById('result').innerText = 'Could not extract valid date or time information from one or both tickets.';
                 return;
             }
 
-            // Get the current date
-            const currentDate = new Date();
-            const currentDateString = currentDate.toISOString().split('T')[0]; // Format: YYYY-MM-DD
-
-            // Combine date with time
-            const firstArrivalString = `${currentDateString} ${firstInfo.arrivalTime}`;
-            const secondDepartureString = `${currentDateString} ${secondInfo.departureTime}`;
-
-            // Create Date objects
-            const firstArrival = new Date(firstArrivalString);
-            const secondDeparture = new Date(secondDepartureString);
+            // Combine extracted dates and times
+            const firstArrival = combineDateAndTime(firstInfo.date, firstInfo.arrivalTime);
+            const secondDeparture = combineDateAndTime(secondInfo.date, secondInfo.departureTime);
 
             // Handle overnight flights (if the second departure time is earlier than the first arrival time)
             if (secondDeparture <= firstArrival) {
@@ -142,10 +147,12 @@
                 const formattedResult = (
                     `First Ticket:\n` +
                     `Arrival Time: ${firstInfo.arrivalTime || 'N/A'} at ${firstInfo.arrivalAirport || 'N/A'}\n` +
-                    `Departure Time: ${firstInfo.departureTime || 'N/A'} from ${firstInfo.departureAirport || 'N/A'}\n\n` +
+                    `Departure Time: ${firstInfo.departureTime || 'N/A'} from ${firstInfo.departureAirport || 'N/A'}\n` +
+                    `Date: ${firstInfo.date || 'N/A'}\n\n` +
                     `Second Ticket:\n` +
                     `Arrival Time: ${secondInfo.arrivalTime || 'N/A'} at ${secondInfo.arrivalAirport || 'N/A'}\n` +
-                    `Departure Time: ${secondInfo.departureTime || 'N/A'} from ${secondInfo.departureAirport || 'N/A'}\n\n` +
+                    `Departure Time: ${secondInfo.departureTime || 'N/A'} from ${secondInfo.departureAirport || 'N/A'}\n` +
+                    `Date: ${secondInfo.date || 'N/A'}\n\n` +
                     `Transfer Time: ${hours} hrs ${minutes} mins`
                 );
 
