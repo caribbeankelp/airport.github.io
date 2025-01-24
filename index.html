@@ -90,12 +90,6 @@
             lines.forEach(line => {
                 line = line.trim();
 
-                if (line.includes('+1')) {
-                    info.nextDayArrival = true; // Marks arrival as the next day
-                } else if (line.includes('-1')) {
-                    info.previousDayArrival = true; // Marks arrival as the previous day
-                }
-
                 if (/\d{1,2}:\d{2}\s?(AM|PM)/.test(line)) {
                     const timeMatch = line.match(/\d{1,2}:\d{2}\s?(AM|PM)/)[0];
                     if (!info.arrivalTime) {
@@ -133,21 +127,6 @@
 
             let arrivalMinutes = firstArrival.hours * 60 + firstArrival.minutes;
             let departureMinutes = secondDeparture.hours * 60 + secondDeparture.minutes;
-
-            // Adjust for +1 (next day arrival)
-            if (firstInfo.nextDayArrival) {
-                arrivalMinutes += 1440; // Add one day in minutes for arrival
-            }
-
-            // Adjust for -1 (previous day arrival)
-            if (firstInfo.previousDayArrival) {
-                arrivalMinutes -= 1440; // Subtract one day in minutes for arrival
-            }
-
-            // Adjust for +1 in departure time if present
-            if (secondInfo.departureTime.includes('+1')) {
-                departureMinutes += 1440;
-            }
 
             // Validate if the second flight departs after the first flight arrives
             if (departureMinutes <= arrivalMinutes) {
