@@ -91,18 +91,19 @@
                 line = line.trim();
 
                 if (line.includes('+1')) {
-                    info.nextDay = true;
+                    info.nextDayArrival = true; // Marks arrival as the next day
+                } else if (line.includes('-1')) {
+                    info.previousDayArrival = true; // Marks arrival as the previous day
                 }
 
-                if (/\d{1,2}:\d{2}\s?(AM|PM)?/.test(line)) {
-                    if (!info.departureTime) {
-                        const [time, ...rest] = line.split(' ');
-                        info.departureTime = time + ' ' + rest.pop();
-                        info.departureAirport = rest.join(' ');
-                    } else {
-                        const [time, ...rest] = line.split(' ');
-                        info.arrivalTime = time + ' ' + rest.pop();
-                        info.arrivalAirport = rest.join(' ');
+                if (/\d{1,2}:\d{2}\s?(AM|PM)/.test(line)) {
+                    const timeMatch = line.match(/\d{1,2}:\d{2}\s?(AM|PM)/)[0];
+                    if (!info.arrivalTime) {
+                        info.arrivalTime = timeMatch;
+                        info.arrivalAirport = line.split(timeMatch)[1].trim();
+                    } else if (!info.departureTime) {
+                        info.departureTime = timeMatch;
+                        info.departureAirport = line.split(timeMatch)[1].trim();
                     }
                 }
             });
@@ -133,14 +134,17 @@
             let arrivalMinutes = firstArrival.hours * 60 + firstArrival.minutes;
             let departureMinutes = secondDeparture.hours * 60 + secondDeparture.minutes;
 
-            if (firstInfo.arrivalTime.includes('+1')) {
-                arrivalMinutes += 1440; // Add one day in minutes for the arrival
-            }
-            if (!firstInfo.arrivalTime.includes('+1') && secondInfo.departureTime.includes('+1')) {
-                departureMinutes += 1440; // Add one day in minutes for the departure if it spans the next day
+            // Adjust for +1 (next day arrival)
+            if (firstInfo.nextDayArrival) {
+                arrivalMinutes += 1440; // Add one day in minutes for arrival
             }
 
-            if (departureMinutes <= arrivalMinutes) {
+            // Adjust for -1 (previous day arrival)
+            if (firstInfo.previousDayArrival) {
+                arrivalMinutes -= 1440; // Subtract one day in minutes for arrival
+            }
+
+            if (secondDeparture.minutes < arrivalMinutes) {
                 document.getElementById('result').innerText =
                     'Second flight departs before or at the same time as the first flight arrives. Transfer is not feasible.';
                 return;
