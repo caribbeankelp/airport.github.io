@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Self-Transfer Time Calculator</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 </head>
 <body class="bg-gradient-to-r from-blue-100 via-blue-200 to-blue-300 min-h-screen flex items-center justify-center">
     <div class="w-full max-w-3xl p-6 bg-white rounded-2xl shadow-lg">
@@ -15,34 +17,34 @@
             <!-- Date and Time Selector 1 -->
             <div>
                 <label class="block text-sm font-medium text-gray-700">Arrival Date and Time (Flight 1)</label>
-                <input type="datetime-local" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+                <input type="text" class="datetime mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">Departure Date and Time (Flight 2)</label>
-                <input type="datetime-local" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+                <input type="text" class="datetime mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
             </div>
 
             <!-- Date and Time Selector 2 -->
             <div>
                 <label class="block text-sm font-medium text-gray-700">Arrival Date and Time (Flight 2)</label>
-                <input type="datetime-local" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+                <input type="text" class="datetime mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">Departure Date and Time (Flight 3)</label>
-                <input type="datetime-local" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+                <input type="text" class="datetime mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
             </div>
 
             <!-- Date and Time Selector 3 -->
             <div>
                 <label class="block text-sm font-medium text-gray-700">Arrival Date and Time (Flight 3)</label>
-                <input type="datetime-local" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+                <input type="text" class="datetime mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">Departure Date and Time (Flight 4)</label>
-                <input type="datetime-local" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+                <input type="text" class="datetime mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
             </div>
 
             <!-- Submit Button -->
@@ -55,13 +57,21 @@
     </div>
 
     <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize Flatpickr for date and time inputs
+            flatpickr('.datetime', {
+                enableTime: true,
+                dateFormat: "Y-m-d H:i",
+            });
+        });
+
         const form = document.querySelector('form');
         const resultDiv = document.getElementById('result');
 
         form.addEventListener('submit', (e) => {
             e.preventDefault();
 
-            const times = [...form.querySelectorAll('input[type="datetime-local"]')].map(input => input.value);
+            const times = [...form.querySelectorAll('.datetime')].map(input => input.value);
             if (times.some(time => time === '')) {
                 alert('Please fill out all date and time fields.');
                 return;
