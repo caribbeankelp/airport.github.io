@@ -45,6 +45,14 @@
                 <input type="time" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
             </div>
 
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Time Format</label>
+                <select id="timeFormat" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400">
+                    <option value="24">24-Hour Format</option>
+                    <option value="12">12-Hour (AM/PM) Format</option>
+                </select>
+            </div>
+
             <!-- Submit Button -->
             <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">Calculate Transfer Time</button>
         </form>
@@ -57,6 +65,7 @@
     <script>
         const form = document.querySelector('form');
         const resultDiv = document.getElementById('result');
+        const timeFormatSelect = document.getElementById('timeFormat');
 
         form.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -67,8 +76,16 @@
                 return;
             }
 
+            const is24HourFormat = timeFormatSelect.value === '24';
+
             const formattedTimes = times.map(time => {
-                const [hours, minutes] = time.split(':').map(Number);
+                let [hours, minutes] = time.split(':').map(Number);
+                if (!is24HourFormat && time.toLowerCase().includes('pm') && hours < 12) {
+                    hours += 12;
+                }
+                if (!is24HourFormat && time.toLowerCase().includes('am') && hours === 12) {
+                    hours = 0;
+                }
                 return hours * 60 + minutes; // Convert to minutes
             });
 
