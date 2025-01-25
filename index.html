@@ -4,112 +4,87 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Self-Transfer Time Calculator</title>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f4f8;
-            color: #333;
-            text-align: center;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            margin: 20px auto;
-            padding: 20px;
-            background-color: #ffffff;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            max-width: 500px;
-        }
-        label {
-            font-weight: bold;
-            display: block;
-            margin-top: 10px;
-        }
-        input {
-            font-size: 16px;
-            margin: 10px 0;
-            padding: 10px;
-            width: 100%;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box;
-        }
-        button {
-            background-color: #007bff;
-            color: #fff;
-            font-size: 16px;
-            padding: 10px;
-            margin-top: 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .result {
-            font-size: 18px;
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #f9f9f9;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h1>Self-Transfer Time Calculator</h1>
-    <div class="container">
-        <form id="transferForm">
-            <label for="arrival">Arrival Time:</label>
-            <input id="arrival" type="text" placeholder="Select arrival time" class="datetime-picker">
+<body class="bg-gradient-to-r from-blue-100 via-blue-200 to-blue-300 min-h-screen flex items-center justify-center">
+    <div class="w-full max-w-3xl p-6 bg-white rounded-2xl shadow-lg">
+        <h1 class="text-2xl font-bold text-center text-blue-600">Self-Transfer Time Calculator</h1>
+        <p class="text-center text-gray-600 mt-2">Calculate if your self-transfer time is sufficient</p>
 
-            <label for="departure">Departure Time:</label>
-            <input id="departure" type="text" placeholder="Select departure time" class="datetime-picker">
+        <form class="mt-6 space-y-6">
+            <!-- Time Selector 1 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Arrival Time (Flight 1)</label>
+                <input type="time" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+            </div>
 
-            <button type="button" onclick="calculateTransferTime()">Calculate Transfer Time</button>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Departure Time (Flight 2)</label>
+                <input type="time" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+            </div>
+
+            <!-- Time Selector 2 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Arrival Time (Flight 2)</label>
+                <input type="time" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Departure Time (Flight 3)</label>
+                <input type="time" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+            </div>
+
+            <!-- Time Selector 3 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Arrival Time (Flight 3)</label>
+                <input type="time" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Departure Time (Flight 4)</label>
+                <input type="time" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">Calculate Transfer Time</button>
         </form>
 
-        <div id="result" class="result"></div>
+        <div id="result" class="mt-6 text-center text-gray-700 hidden">
+            <!-- Calculation Result will be displayed here -->
+        </div>
     </div>
 
     <script>
-        // Initialize the Flatpickr date-time picker
-        document.querySelectorAll('.datetime-picker').forEach(picker => {
-            flatpickr(picker, {
-                enableTime: true,
-                dateFormat: "Y-m-d H:i",
-                time_24hr: true
+        const form = document.querySelector('form');
+        const resultDiv = document.getElementById('result');
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const times = [...form.querySelectorAll('input[type="time"]')].map(input => input.value);
+            if (times.some(time => time === '')) {
+                alert('Please fill out all time fields.');
+                return;
+            }
+
+            const formattedTimes = times.map(time => {
+                const [hours, minutes] = time.split(':').map(Number);
+                return hours * 60 + minutes; // Convert to minutes
             });
+
+            const transferTimes = [
+                formattedTimes[1] - formattedTimes[0],
+                formattedTimes[3] - formattedTimes[2],
+                formattedTimes[5] - formattedTimes[4],
+            ];
+
+            const messages = transferTimes.map((time, index) => {
+                return `Transfer ${index + 1}: ${time > 0 ? `${time} minutes` : 'Not possible'}`;
+            }).join('<br>');
+
+            resultDiv.innerHTML = messages;
+            resultDiv.classList.remove('hidden');
         });
-
-        function calculateTransferTime() {
-            const arrivalInput = document.getElementById("arrival").value;
-            const departureInput = document.getElementById("departure").value;
-
-            if (!arrivalInput || !departureInput) {
-                document.getElementById("result").innerText = "Please select both arrival and departure times.";
-                return;
-            }
-
-            const arrivalTime = new Date(arrivalInput);
-            const departureTime = new Date(departureInput);
-
-            if (departureTime <= arrivalTime) {
-                document.getElementById("result").innerText = "Transfer is not feasible: Departure time must be after arrival time.";
-                return;
-            }
-
-            const diffMs = departureTime - arrivalTime;
-            const diffMinutes = Math.floor(diffMs / (1000 * 60));
-            const hours = Math.floor(diffMinutes / 60);
-            const minutes = diffMinutes % 60;
-
-            document.getElementById("result").innerText = `Transfer Time: ${hours} hours and ${minutes} minutes`;
-        }
     </script>
 </body>
 </html>
