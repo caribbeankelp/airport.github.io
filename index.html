@@ -12,37 +12,43 @@
         <p class="text-center text-gray-600 mt-2">Calculate if your self-transfer time is sufficient</p>
 
         <form class="mt-6 space-y-6">
-            <!-- Time Selector 1 -->
+            <!-- Date and Time Selector 1 -->
             <div>
-                <label class="block text-sm font-medium text-gray-700">Arrival Time (Flight 1)</label>
-                <input type="time" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+                <label class="block text-sm font-medium text-gray-700">Arrival Date and Time (Flight 1)</label>
+                <input type="date" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+                <input type="time" class="mt-2 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700">Departure Time (Flight 2)</label>
-                <input type="time" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+                <label class="block text-sm font-medium text-gray-700">Departure Date and Time (Flight 2)</label>
+                <input type="date" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+                <input type="time" class="mt-2 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
             </div>
 
-            <!-- Time Selector 2 -->
+            <!-- Date and Time Selector 2 -->
             <div>
-                <label class="block text-sm font-medium text-gray-700">Arrival Time (Flight 2)</label>
-                <input type="time" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Departure Time (Flight 3)</label>
-                <input type="time" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
-            </div>
-
-            <!-- Time Selector 3 -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Arrival Time (Flight 3)</label>
-                <input type="time" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+                <label class="block text-sm font-medium text-gray-700">Arrival Date and Time (Flight 2)</label>
+                <input type="date" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+                <input type="time" class="mt-2 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700">Departure Time (Flight 4)</label>
-                <input type="time" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+                <label class="block text-sm font-medium text-gray-700">Departure Date and Time (Flight 3)</label>
+                <input type="date" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+                <input type="time" class="mt-2 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+            </div>
+
+            <!-- Date and Time Selector 3 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Arrival Date and Time (Flight 3)</label>
+                <input type="date" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+                <input type="time" class="mt-2 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Departure Date and Time (Flight 4)</label>
+                <input type="date" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+                <input type="time" class="mt-2 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
             </div>
 
             <div>
@@ -70,33 +76,33 @@
         form.addEventListener('submit', (e) => {
             e.preventDefault();
 
-            const times = [...form.querySelectorAll('input[type="time"]')].map(input => input.value);
-            if (times.some(time => time === '')) {
-                alert('Please fill out all time fields.');
-                return;
+            const inputs = form.querySelectorAll('input');
+            const timesAndDates = [];
+
+            for (let i = 0; i < inputs.length; i += 2) {
+                const date = inputs[i].value;
+                const time = inputs[i + 1].value;
+
+                if (!date || !time) {
+                    alert('Please fill out all date and time fields.');
+                    return;
+                }
+
+                timesAndDates.push(`${date}T${time}`);
             }
 
             const is24HourFormat = timeFormatSelect.value === '24';
 
-            const formattedTimes = times.map(time => {
-                let [hours, minutes] = time.split(':').map(Number);
-                if (!is24HourFormat && time.toLowerCase().includes('pm') && hours < 12) {
-                    hours += 12;
-                }
-                if (!is24HourFormat && time.toLowerCase().includes('am') && hours === 12) {
-                    hours = 0;
-                }
-                return hours * 60 + minutes; // Convert to minutes
-            });
+            const parsedTimes = timesAndDates.map(dateTime => new Date(dateTime).getTime());
 
             const transferTimes = [
-                formattedTimes[1] - formattedTimes[0],
-                formattedTimes[3] - formattedTimes[2],
-                formattedTimes[5] - formattedTimes[4],
+                (parsedTimes[1] - parsedTimes[0]) / (1000 * 60),
+                (parsedTimes[3] - parsedTimes[2]) / (1000 * 60),
+                (parsedTimes[5] - parsedTimes[4]) / (1000 * 60),
             ];
 
             const messages = transferTimes.map((time, index) => {
-                return `Transfer ${index + 1}: ${time > 0 ? `${time} minutes` : 'Not possible'}`;
+                return `Transfer ${index + 1}: ${time > 0 ? `${Math.floor(time)} minutes` : 'Not possible'}`;
             }).join('<br>');
 
             resultDiv.innerHTML = messages;
