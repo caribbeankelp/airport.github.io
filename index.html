@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Self-Transfer Time Calculator</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 </head>
 <body class="bg-gradient-to-r from-blue-100 via-blue-200 to-blue-300 min-h-screen flex items-center justify-center">
     <div class="w-full max-w-3xl p-6 bg-white rounded-2xl shadow-lg">
@@ -15,40 +17,34 @@
             <!-- Date and Time Selector 1 -->
             <div>
                 <label class="block text-sm font-medium text-gray-700">Arrival Date and Time (Flight 1)</label>
-                <input type="date" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
-                <input type="time" class="mt-2 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+                <input type="text" id="arrival1" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">Departure Date and Time (Flight 2)</label>
-                <input type="date" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
-                <input type="time" class="mt-2 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+                <input type="text" id="departure1" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
             </div>
 
             <!-- Date and Time Selector 2 -->
             <div>
                 <label class="block text-sm font-medium text-gray-700">Arrival Date and Time (Flight 2)</label>
-                <input type="date" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
-                <input type="time" class="mt-2 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+                <input type="text" id="arrival2" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">Departure Date and Time (Flight 3)</label>
-                <input type="date" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
-                <input type="time" class="mt-2 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+                <input type="text" id="departure2" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
             </div>
 
             <!-- Date and Time Selector 3 -->
             <div>
                 <label class="block text-sm font-medium text-gray-700">Arrival Date and Time (Flight 3)</label>
-                <input type="date" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
-                <input type="time" class="mt-2 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+                <input type="text" id="arrival3" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">Departure Date and Time (Flight 4)</label>
-                <input type="date" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
-                <input type="time" class="mt-2 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
+                <input type="text" id="departure3" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400" required>
             </div>
 
             <div>
@@ -69,6 +65,16 @@
     </div>
 
     <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize Flatpickr for date and time inputs
+            flatpickr("#arrival1", { enableTime: true, dateFormat: "Y-m-d H:i" });
+            flatpickr("#departure1", { enableTime: true, dateFormat: "Y-m-d H:i" });
+            flatpickr("#arrival2", { enableTime: true, dateFormat: "Y-m-d H:i" });
+            flatpickr("#departure2", { enableTime: true, dateFormat: "Y-m-d H:i" });
+            flatpickr("#arrival3", { enableTime: true, dateFormat: "Y-m-d H:i" });
+            flatpickr("#departure3", { enableTime: true, dateFormat: "Y-m-d H:i" });
+        });
+
         const form = document.querySelector('form');
         const resultDiv = document.getElementById('result');
         const timeFormatSelect = document.getElementById('timeFormat');
@@ -76,24 +82,16 @@
         form.addEventListener('submit', (e) => {
             e.preventDefault();
 
-            const inputs = form.querySelectorAll('input');
-            const timesAndDates = [];
+            const inputs = [
+                "arrival1", "departure1", "arrival2", "departure2", "arrival3", "departure3"
+            ].map(id => document.getElementById(id).value);
 
-            for (let i = 0; i < inputs.length; i += 2) {
-                const date = inputs[i].value;
-                const time = inputs[i + 1].value;
-
-                if (!date || !time) {
-                    alert('Please fill out all date and time fields.');
-                    return;
-                }
-
-                timesAndDates.push(`${date}T${time}`);
+            if (inputs.some(input => !input)) {
+                alert('Please fill out all date and time fields.');
+                return;
             }
 
-            const is24HourFormat = timeFormatSelect.value === '24';
-
-            const parsedTimes = timesAndDates.map(dateTime => new Date(dateTime).getTime());
+            const parsedTimes = inputs.map(dateTime => new Date(dateTime).getTime());
 
             const transferTimes = [
                 (parsedTimes[1] - parsedTimes[0]) / (1000 * 60),
