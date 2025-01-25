@@ -58,11 +58,12 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Initialize Flatpickr for date and time inputs
-            flatpickr('.datetime', {
-                enableTime: true,
-                dateFormat: "Y-m-d H:i",
-            });
+            const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+            const options = isMobile
+                ? { enableTime: false, dateFormat: "Y-m-d" } // Date-only for mobile
+                : { enableTime: true, dateFormat: "Y-m-d H:i" }; // Date and time for desktop
+
+            flatpickr('.datetime', options);
         });
 
         const form = document.querySelector('form');
