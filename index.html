@@ -59,9 +59,10 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-            const options = isMobile
-                ? { enableTime: false, dateFormat: "Y-m-d" } // Date-only for mobile
-                : { enableTime: true, dateFormat: "Y-m-d H:i" }; // Date and time for desktop
+            const options = {
+                enableTime: !isMobile, // Enable time only on desktop
+                dateFormat: "d-m-Y" + (!isMobile ? " H:i" : "") // Date format: d-m-Y, with time for desktop
+            };
 
             flatpickr('.datetime', options);
         });
@@ -78,7 +79,7 @@
                 return;
             }
 
-            const formattedTimes = times.map(time => new Date(time).getTime());
+            const formattedTimes = times.map(time => new Date(time.split('-').reverse().join('-')).getTime());
 
             const transferTimes = [
                 (formattedTimes[1] - formattedTimes[0]) / (1000 * 60),
