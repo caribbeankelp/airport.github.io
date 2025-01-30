@@ -77,6 +77,23 @@
 <script>
 let ticketCounter = 1;
 
+// 初始化 Flatpickr 时间选择器
+function initFlatpickr(container) {
+    flatpickr(container.querySelectorAll('.flatpickr'), {
+        enableTime: true,
+        noCalendar: false,
+        time_24hr: false,
+        dateFormat: "d-M-Y h:i K",
+        minDate: "today",
+        locale: {
+            firstDayOfWeek: 1,
+            months: {
+                shorthand: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+            }
+        }
+    });
+}
+
 // 添加新机票
 function addTicket() {
     ticketCounter++;
@@ -119,20 +136,6 @@ function addTicket() {
     initFlatpickr(newTicket);
 }
 
-// 初始化 Flatpickr 时间选择器
-function initFlatpickr(container) {
-    flatpickr(container.querySelectorAll('.flatpickr'), {
-        enableTime: true,
-        time_24hr: false,
-        dateFormat: "d-M-Y h:i K",
-        minDate: "today",
-        locale: {
-            firstDayOfWeek: 1,
-            months: { shorthand: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] }
-        }
-    });
-}
-
 // 移除机票
 function removeTicket(ticketId) {
     const ticket = document.querySelector(`[data-ticket-id="${ticketId}"]`);
@@ -141,7 +144,7 @@ function removeTicket(ticketId) {
     }
 }
 
-// 初始化 Flatpickr
+// 初始化 Flatpickr 选项
 document.addEventListener('DOMContentLoaded', () => {
     initFlatpickr(document);
 });
