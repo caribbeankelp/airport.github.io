@@ -123,12 +123,12 @@ function addTicket() {
 function initFlatpickr(container) {
     flatpickr(container.querySelectorAll('.flatpickr'), {
         enableTime: true,
-        time_24hr: true,
-        dateFormat: "d-m-Y H:i",
+        time_24hr: false,
+        dateFormat: "d-M-Y h:i K",
         minDate: "today",
         locale: {
             firstDayOfWeek: 1,
-            weekdays: { shorthand: ["日", "一", "二", "三", "四", "五", "六"] }
+            months: { shorthand: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] }
         }
     });
 }
