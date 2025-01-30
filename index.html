@@ -3,23 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>机票时间计算器</title>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <title>智能转机计算器 - 含保险推荐</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 </head>
-<body class="bg-gray-100 p-4">
-    <div class="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-md">
-        <h1 class="text-2xl font-bold mb-4">机票时间计算器</h1>
-        
-        <form id="mainForm">
-            <!-- Initial Ticket -->
-            <div class="ticket-group border p-4 rounded-lg bg-gray-50">
+<body class="bg-gray-100 min-h-screen p-4">
+    <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-md p-6">
+        <h1 class="text-2xl font-bold text-blue-600 mb-4">智能转机计算器</h1>
+        <p class="text-gray-600 mb-6">支持多程机票/行李追踪/保险推荐</p>
+
+        <!-- 控制面板 -->
+        <div class="mb-6 flex flex-wrap gap-4">
+            <button type="button" onclick="addTicket()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors">
+                + 添加机票
+            </button>
+            <select id="transferType" class="border p-2 rounded-lg bg-white" onchange="updateRequirements()">
+                <option value="international">国际转机</option>
+                <option value="schengen">申根区转机</option>
+                <option value="domestic">国内转机</option>
+            </select>
+            <div class="flex items-center gap-2">
+                <input type="checkbox" id="baggageCheck" class="w-4 h-4">
+                <label for="baggageCheck" class="text-sm">需要行李托运</label>
+            </div>
+        </div>
+
+        <!-- 机票表单容器 -->
+        <form id="mainForm" class="space-y-6" onsubmit="calculate(event)">
+            <div class="ticket-group border p-4 rounded-lg" data-ticket-id="1">
                 <div class="flex justify-between mb-4">
                     <h3 class="font-bold">机票 #1 (往返)</h3>
+                    <button type="button" onclick="removeTicket(1)" class="text-red-500 hover:text-red-700">× 移除</button>
                 </div>
-                <!-- 出发时间 -->
-                <div class="mb-4 p-3 bg-white rounded">
+
+                <div class="mb-4 p-3 bg-gray-50 rounded">
                     <h4 class="font-semibold mb-2">去程</h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -32,8 +50,8 @@
                         </div>
                     </div>
                 </div>
-                <!-- 返程 -->
-                <div class="p-3 bg-white rounded">
+
+                <div class="p-3 bg-gray-50 rounded">
                     <h4 class="font-semibold mb-2">返程</h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -49,75 +67,87 @@
             </div>
         </form>
 
-        <button type="button" onclick="addTicket()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-            + 添加新机票
+        <button type="submit" form="mainForm" class="w-full bg-blue-600 text-white py-3 rounded-lg mt-6 hover:bg-blue-700 transition-colors">
+            立即计算
         </button>
+
+        <div id="results" class="mt-6 space-y-4 hidden"></div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            initFlatpickr(document);
-        });
+<script>
+let ticketCounter = 1;
 
-        let ticketCounter = 1;
-
-        function initFlatpickr(container) {
-            flatpickr(container.querySelectorAll('.flatpickr'), {
-                enableTime: true,
-                noCalendar: false,
-                dateFormat: "M j, Y h:i K",  // Example: Jan 29, 2025 10:30 AM
-                time_24hr: false,  // Ensures AM/PM format
-                minDate: "today",
-                locale: {
-                    firstDayOfWeek: 1,
-                    weekdays: { shorthand: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] }
-                }
-            });
+// 初始化 Flatpickr 时间选择器
+function initFlatpickr(container) {
+    flatpickr(container.querySelectorAll('.flatpickr'), {
+        enableTime: true,
+        noCalendar: false,
+        time_24hr: false,
+        dateFormat: "d-M-Y h:i K",
+        minDate: "today",
+        locale: {
+            firstDayOfWeek: 1,
+            months: {
+                shorthand: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+            }
         }
+    });
+}
 
-        function addTicket() {
-            ticketCounter++;
-            const newTicket = document.createElement('div');
-            newTicket.className = 'ticket-group border p-4 rounded-lg bg-gray-50 mt-4';
-            newTicket.innerHTML = `
-                <div class="flex justify-between mb-4">
-                    <h3 class="font-bold">机票 #${ticketCounter} (往返)</h3>
-                    <button type="button" onclick="removeTicket(this)" class="text-red-500 hover:text-red-700">× 移除</button>
+// 添加新机票
+function addTicket() {
+    ticketCounter++;
+    const newTicket = document.createElement('div');
+    newTicket.className = 'ticket-group border p-4 rounded-lg mt-4';
+    newTicket.dataset.ticketId = ticketCounter;
+    newTicket.innerHTML = `
+        <div class="flex justify-between mb-4">
+            <h3 class="font-bold">机票 #${ticketCounter} (往返)</h3>
+            <button type="button" onclick="removeTicket(${ticketCounter})" class="text-red-500 hover:text-red-700">× 移除</button>
+        </div>
+        <div class="mb-4 p-3 bg-gray-50 rounded">
+            <h4 class="font-semibold mb-2">去程</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm text-gray-700 mb-1">出发时间</label>
+                    <input type="text" class="departure flatpickr w-full p-2 border rounded" required>
                 </div>
-                <div class="mb-4 p-3 bg-white rounded">
-                    <h4 class="font-semibold mb-2">去程</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm text-gray-700 mb-1">出发时间</label>
-                            <input type="text" class="departure flatpickr w-full p-2 border rounded" required>
-                        </div>
-                        <div>
-                            <label class="block text-sm text-gray-700 mb-1">到达时间</label>
-                            <input type="text" class="arrival flatpickr w-full p-2 border rounded" required>
-                        </div>
-                    </div>
+                <div>
+                    <label class="block text-sm text-gray-700 mb-1">到达时间</label>
+                    <input type="text" class="arrival flatpickr w-full p-2 border rounded" required>
                 </div>
-                <div class="p-3 bg-white rounded">
-                    <h4 class="font-semibold mb-2">返程</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm text-gray-700 mb-1">出发时间</label>
-                            <input type="text" class="departure flatpickr w-full p-2 border rounded" required>
-                        </div>
-                        <div>
-                            <label class="block text-sm text-gray-700 mb-1">到达时间</label>
-                            <input type="text" class="arrival flatpickr w-full p-2 border rounded" required>
-                        </div>
-                    </div>
+            </div>
+        </div>
+        <div class="p-3 bg-gray-50 rounded">
+            <h4 class="font-semibold mb-2">返程</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm text-gray-700 mb-1">出发时间</label>
+                    <input type="text" class="departure flatpickr w-full p-2 border rounded" required>
                 </div>
-            `;
-            document.getElementById('mainForm').appendChild(newTicket);
-            initFlatpickr(newTicket);
-        }
+                <div>
+                    <label class="block text-sm text-gray-700 mb-1">到达时间</label>
+                    <input type="text" class="arrival flatpickr w-full p-2 border rounded" required>
+                </div>
+            </div>
+        </div>
+    `;
+    document.getElementById('mainForm').appendChild(newTicket);
+    initFlatpickr(newTicket);
+}
 
-        function removeTicket(button) {
-            button.closest('.ticket-group').remove();
-        }
-    </script>
+// 移除机票
+function removeTicket(ticketId) {
+    const ticket = document.querySelector(`[data-ticket-id="${ticketId}"]`);
+    if (ticket) {
+        ticket.remove();
+    }
+}
+
+// 初始化 Flatpickr 选项
+document.addEventListener('DOMContentLoaded', () => {
+    initFlatpickr(document);
+});
+</script>
 </body>
 </html>
