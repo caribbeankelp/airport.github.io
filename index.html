@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,14 +31,12 @@
 
         <!-- 机票表单容器 -->
         <form id="mainForm" class="space-y-6" onsubmit="calculate(event)">
-            <!-- 初始机票 -->
             <div class="ticket-group border p-4 rounded-lg" data-ticket-id="1">
                 <div class="flex justify-between mb-4">
                     <h3 class="font-bold">机票 #1 (往返)</h3>
                     <button type="button" onclick="removeTicket(1)" class="text-red-500 hover:text-red-700">× 移除</button>
                 </div>
-                
-                <!-- 去程 -->
+
                 <div class="mb-4 p-3 bg-gray-50 rounded">
                     <h4 class="font-semibold mb-2">去程</h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -53,7 +51,6 @@
                     </div>
                 </div>
 
-                <!-- 返程 -->
                 <div class="p-3 bg-gray-50 rounded">
                     <h4 class="font-semibold mb-2">返程</h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -74,24 +71,18 @@
             立即计算
         </button>
 
-        <!-- 结果展示区 -->
         <div id="results" class="mt-6 space-y-4 hidden"></div>
     </div>
 
 <script>
-// 全局配置
 let ticketCounter = 1;
-const REQUIREMENTS = {
-    international: { minTime: 90, insurance: true },
-    schengen: { minTime: 60, insurance: false },
-    domestic: { minTime: 30, insurance: false }
-};
 
 // 添加新机票
 function addTicket() {
     ticketCounter++;
     const newTicket = document.createElement('div');
     newTicket.className = 'ticket-group border p-4 rounded-lg mt-4';
+    newTicket.dataset.ticketId = ticketCounter;
     newTicket.innerHTML = `
         <div class="flex justify-between mb-4">
             <h3 class="font-bold">机票 #${ticketCounter} (往返)</h3>
@@ -128,11 +119,12 @@ function addTicket() {
     initFlatpickr(newTicket);
 }
 
-// 初始化时间选择器
+// 初始化 Flatpickr 时间选择器
 function initFlatpickr(container) {
     flatpickr(container.querySelectorAll('.flatpickr'), {
         enableTime: true,
-        dateFormat: "Y-m-d H:i",
+        time_24hr: true,
+        dateFormat: "d-m-Y H:i",
         minDate: "today",
         locale: {
             firstDayOfWeek: 1,
@@ -141,140 +133,15 @@ function initFlatpickr(container) {
     });
 }
 
-// 核心计算逻辑
-function calculate(e) {
-    e.preventDefault();
-    const tickets = Array.from(document.querySelectorAll('.ticket-group')).map(ticket => ({
-        outbound: {
-            departure: parseDate(ticket.querySelector('.outbound .departure').value),
-            arrival: parseDate(ticket.querySelector('.outbound .arrival').value)
-        },
-        return: {
-            departure: parseDate(ticket.querySelector('.return .departure').value),
-            arrival: parseDate(ticket.querySelector('.return .arrival').value)
-        }
-    }));
-
-    if (!validateTickets(tickets)) return;
-
-    const transferPoints = [];
-    for (let i = 0; i < tickets.length - 1; i++) {
-        transferPoints.push(createTransferPoint(tickets, i, 'outbound'));
-        transferPoints.push(createTransferPoint(tickets, i, 'return'));
+// 移除机票
+function removeTicket(ticketId) {
+    const ticket = document.querySelector(`[data-ticket-id="${ticketId}"]`);
+    if (ticket) {
+        ticket.remove();
     }
-
-    showResults(transferPoints);
 }
 
-// 创建转机点数据
-function createTransferPoint(tickets, index, type) {
-    const isOutbound = type === 'outbound';
-    return {
-        type: isOutbound ? '去程转机' : '返程转机',
-        arrival: isOutbound ? tickets[index].outbound.arrival : tickets[index+1].return.arrival,
-        departure: isOutbound ? tickets[index+1].outbound.departure : tickets[index].return.departure,
-        requiredTime: REQUIREMENTS[document.getElementById('transferType').value].minTime
-    };
-}
-
-// 显示结果
-function showResults(transferPoints) {
-    const results = transferPoints.map((point, index) => {
-        const actualTime = Math.round((point.departure - point.arrival) / 60000);
-        const isSafe = actualTime >= point.requiredTime;
-        
-        return `
-            <div class="p-4 rounded-lg ${isSafe ? 'bg-green-100' : 'bg-red-100'} border ${isSafe ? 'border-green-200' : 'border-red-200'}">
-                <h3 class="font-bold">转机点 #${index+1} (${point.type})</h3>
-                <p class="text-sm text-gray-600">到达时间: ${formatDate(point.arrival)}</p>
-                <p class="text-sm text-gray-600 mb-2">下段出发: ${formatDate(point.departure)}</p>
-                <div class="flex justify-between items-center">
-                    <span>实际时间: <strong>${actualTime}分钟</strong></span>
-                    <span>要求时间: <strong>${point.requiredTime}分钟</strong></span>
-                    <span class="text-lg">${isSafe ? '✅' : '❌'}</span>
-                </div>
-            </div>
-        `;
-    });
-
-    // 保险推荐功能
-    const riskyTransfers = transferPoints.filter(p => 
-        Math.round((p.departure - p.arrival) / 60000) < p.requiredTime
-    );
-    
-    results.push(`
-        <div class="p-4 bg-yellow-50 rounded-lg border-2 border-yellow-200">
-            <h3 class="font-bold mb-2">🛡️ 保险建议</h3>
-            ${generateInsuranceAdvice(riskyTransfers)}
-        </div>
-    `);
-
-    document.getElementById('results').innerHTML = results.join('');
-    document.getElementById('results').classList.remove('hidden');
-}
-
-// 保险建议生成器
-function generateInsuranceAdvice(riskyTransfers) {
-    const hasBaggage = document.getElementById('baggageCheck').checked;
-    const riskyCount = riskyTransfers.length;
-    
-    if (riskyCount === 0 && !hasBaggage) {
-        return `<p class="text-green-600">✅ 推荐基础保险：行李基本险</p>`;
-    }
-    
-    let advice = `<ul class="list-disc pl-5">`;
-    if (riskyCount > 0) {
-        advice += `
-            <li class="text-red-600">高风险转机点 x ${riskyCount}</li>
-            <li>航班延误险（2小时起赔）</li>
-            <li>转机失败住宿补偿</li>
-        `;
-    }
-    if (hasBaggage) {
-        advice += `<li>行李丢失/延误险（最高$1000赔偿）</li>`;
-    }
-    advice += `</ul>`;
-    
-    return `
-        <p class="text-red-600 mb-2">⚠️ 推荐全面旅行保险：</p>
-        ${advice}
-        <p class="mt-2 text-sm">推荐供应商：Allianz Travel / AXA Assurance</p>
-    `;
-}
-
-// 工具函数
-function parseDate(str) {
-    const [date, time] = str.split(' ');
-    const [year, month, day] = date.split('-');
-    const [hours, minutes] = time.split(':');
-    return new Date(year, month-1, day, hours, minutes);
-}
-
-function formatDate(date) {
-    return date.toLocaleString('zh-CN', {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
-
-function validateTickets(tickets) {
-    let isValid = true;
-    tickets.forEach((ticket, index) => {
-        if (ticket.outbound.departure >= ticket.outbound.arrival) {
-            alert(`机票 #${index+1} 去程：出发时间必须早于到达时间！`);
-            isValid = false;
-        }
-        if (ticket.return.departure >= ticket.return.arrival) {
-            alert(`机票 #${index+1} 返程：出发时间必须早于到达时间！`);
-            isValid = false;
-        }
-    });
-    return isValid;
-}
-
-// 初始化
+// 初始化 Flatpickr
 document.addEventListener('DOMContentLoaded', () => {
     initFlatpickr(document);
 });
