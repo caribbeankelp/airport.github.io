@@ -7,9 +7,13 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* 为了确保 Flatpickr 的弹出层能正常显示 */
+    .flatpickr-calendar { z-index: 9999 !important; }
+  </style>
 </head>
 <body class="bg-gray-100 flex flex-col min-h-screen">
-  <!-- Navigation Bar -->
+  <!-- 导航栏 -->
   <nav class="bg-blue-600 text-white">
     <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
       <a href="#" class="text-xl font-bold">机票计算器</a>
@@ -21,13 +25,13 @@
     </div>
   </nav>
 
-  <!-- Main Content -->
+  <!-- 主要内容 -->
   <main class="flex-grow p-4">
     <div class="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-md">
       <h1 class="text-2xl font-bold mb-4">机票时间计算器</h1>
       
       <form id="mainForm">
-        <!-- Initial Ticket -->
+        <!-- 初始机票 -->
         <div class="ticket-group border p-4 rounded-lg bg-gray-50">
           <div class="flex justify-between mb-4">
             <h3 class="font-bold">机票 #1 (往返)</h3>
@@ -38,11 +42,11 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm text-gray-700 mb-1">出发时间</label>
-                <input type="text" class="departure flatpickr w-full p-2 border rounded" required>
+                <input type="text" class="departure datetime-input w-full p-2 border rounded" required>
               </div>
               <div>
                 <label class="block text-sm text-gray-700 mb-1">到达时间</label>
-                <input type="text" class="arrival flatpickr w-full p-2 border rounded" required>
+                <input type="text" class="arrival datetime-input w-full p-2 border rounded" required>
               </div>
             </div>
           </div>
@@ -52,24 +56,32 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm text-gray-700 mb-1">出发时间</label>
-                <input type="text" class="departure flatpickr w-full p-2 border rounded" required>
+                <input type="text" class="departure datetime-input w-full p-2 border rounded" required>
               </div>
               <div>
                 <label class="block text-sm text-gray-700 mb-1">到达时间</label>
-                <input type="text" class="arrival flatpickr w-full p-2 border rounded" required>
+                <input type="text" class="arrival datetime-input w-full p-2 border rounded" required>
               </div>
             </div>
           </div>
         </div>
       </form>
 
-      <button type="button" onclick="addTicket()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-        + 添加新机票
-      </button>
+      <div class="mt-4 flex space-x-4">
+        <button type="button" onclick="addTicket()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+          + 添加新机票
+        </button>
+        <button type="button" onclick="calculateTimes()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+          计算时间
+        </button>
+      </div>
+
+      <!-- 结果展示区 -->
+      <div id="results" class="mt-6 p-4 bg-gray-50 rounded shadow hidden"></div>
     </div>
   </main>
 
-  <!-- Footer -->
+  <!-- 页脚 -->
   <footer class="bg-gray-800 text-gray-200">
     <div class="max-w-7xl mx-auto px-4 py-4 text-center">
       <p>&copy; 2023 机票时间计算器. 版权所有.</p>
@@ -77,26 +89,54 @@
   </footer>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      initFlatpickr(document);
+    // 判断是否为移动端
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
+    // 页面加载完成后初始化输入框
+    window.addEventListener('load', () => {
+      if (isMobile) {
+        initNativeInputs(document);
+      } else {
+        initFlatpickr(document);
+      }
     });
 
     let ticketCounter = 1;
 
+    // 桌面端：使用 Flatpickr 初始化
     function initFlatpickr(container) {
-      flatpickr(container.querySelectorAll('.flatpickr'), {
-        enableTime: true,
-        noCalendar: false,
-        dateFormat: "M j, Y h:i K",  // Example: Jan 29, 2025 10:30 AM
-        time_24hr: false,  // Use AM/PM format
-        minDate: "today",
-        locale: {
-          firstDayOfWeek: 1,
-          weekdays: { shorthand: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] }
-        }
+      container.querySelectorAll('.datetime-input').forEach(input => {
+        // 确保类型为 text 以供 Flatpickr 使用
+        input.type = "text";
+        flatpickr(input, {
+          enableTime: true,
+          noCalendar: false,
+          altInput: true,
+          altFormat: "M j, Y h:i A",   // 例如：Jan 29, 2025 10:30 AM
+          dateFormat: "Y-m-d H:i",      // 内部格式
+          time_24hr: false,
+          minDate: "today",
+          clickOpens: true,
+          allowInput: true,
+          locale: {
+            firstDayOfWeek: 1,
+            weekdays: { shorthand: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] }
+          }
+        });
       });
     }
 
+    // 移动端：使用系统原生的 datetime-local 输入
+    function initNativeInputs(container) {
+      container.querySelectorAll('.datetime-input').forEach(input => {
+        input.type = "datetime-local";
+        // 设置 min 值为今天（格式：YYYY-MM-DD）
+        const today = new Date().toISOString().split("T")[0];
+        input.min = today;
+      });
+    }
+
+    // 添加新机票时根据设备类型初始化新输入框
     function addTicket() {
       ticketCounter++;
       const newTicket = document.createElement('div');
@@ -111,11 +151,11 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm text-gray-700 mb-1">出发时间</label>
-              <input type="text" class="departure flatpickr w-full p-2 border rounded" required>
+              <input type="text" class="departure datetime-input w-full p-2 border rounded" required>
             </div>
             <div>
               <label class="block text-sm text-gray-700 mb-1">到达时间</label>
-              <input type="text" class="arrival flatpickr w-full p-2 border rounded" required>
+              <input type="text" class="arrival datetime-input w-full p-2 border rounded" required>
             </div>
           </div>
         </div>
@@ -124,21 +164,68 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm text-gray-700 mb-1">出发时间</label>
-              <input type="text" class="departure flatpickr w-full p-2 border rounded" required>
+              <input type="text" class="departure datetime-input w-full p-2 border rounded" required>
             </div>
             <div>
               <label class="block text-sm text-gray-700 mb-1">到达时间</label>
-              <input type="text" class="arrival flatpickr w-full p-2 border rounded" required>
+              <input type="text" class="arrival datetime-input w-full p-2 border rounded" required>
             </div>
           </div>
         </div>
       `;
       document.getElementById('mainForm').appendChild(newTicket);
-      initFlatpickr(newTicket);
+      if (isMobile) {
+        initNativeInputs(newTicket);
+      } else {
+        initFlatpickr(newTicket);
+      }
     }
 
+    // 移除机票
     function removeTicket(button) {
       button.closest('.ticket-group').remove();
+    }
+
+    // 计算每张机票的时间差（单位：分钟）
+    function calculateTimes() {
+      const ticketGroups = document.querySelectorAll('.ticket-group');
+      let resultsHtml = '';
+      
+      ticketGroups.forEach((group, index) => {
+        // 获取4个输入框（去程2个，返程2个）
+        const inputs = group.querySelectorAll('.datetime-input');
+        if (inputs.length < 4) return;
+        
+        const outboundDeparture = inputs[0].value;
+        const outboundArrival = inputs[1].value;
+        const inboundDeparture = inputs[2].value;
+        const inboundArrival = inputs[3].value;
+        
+        // 辅助函数：解析日期字符串（移动端直接解析，桌面端需要替换空格为T）
+        function parseDate(value) {
+          return new Date(isMobile ? value : value.replace(" ", "T"));
+        }
+        
+        const od = parseDate(outboundDeparture);
+        const oa = parseDate(outboundArrival);
+        const id = parseDate(inboundDeparture);
+        const ia = parseDate(inboundArrival);
+        
+        const outboundDiff = Math.round((oa - od) / 60000);
+        const inboundDiff = Math.round((ia - id) / 60000);
+        
+        resultsHtml += `
+          <div class="mb-4 p-4 border rounded bg-gray-50">
+            <h4 class="font-bold mb-2">机票 #${index + 1} 结果</h4>
+            <p>去程时间差: <strong>${isNaN(outboundDiff) ? "无效" : outboundDiff + " 分钟"}</strong></p>
+            <p>返程时间差: <strong>${isNaN(inboundDiff) ? "无效" : inboundDiff + " 分钟"}</strong></p>
+          </div>
+        `;
+      });
+      
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = resultsHtml || '<p class="text-red-500">未能计算，请检查所有输入是否有效。</p>';
+      resultsDiv.classList.remove('hidden');
     }
   </script>
 </body>
