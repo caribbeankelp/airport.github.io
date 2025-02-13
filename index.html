@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Transfer Time Calculator</title>
+    <link href="public/styles.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <div class="bg-white shadow-lg rounded-lg p-8 max-w-md w-full">
+        <h1 class="text-3xl font-bold mb-8 text-center text-blue-600">Flight Transfer Time Calculator</h1>
+        <form id="flight-form" class="space-y-6">
+            <div>
+                <label for="flight1-arrival" class="block text-sm font-medium text-gray-700">Flight A-B Arrival Time:</label>
+                <input type="datetime-local" id="flight1-arrival" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
+            </div>
+            <div>
+                <label for="flight2-departure" class="block text-sm font-medium text-gray-700">Flight B-C Departure Time:</label>
+                <input type="datetime-local" id="flight2-departure" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
+            </div>
+            <div>
+                <label for="flight3-arrival" class="block text-sm font-medium text-gray-700">Flight C-B Arrival Time:</label>
+                <input type="datetime-local" id="flight3-arrival" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
+            </div>
+            <div>
+                <label for="flight4-departure" class="block text-sm font-medium text-gray-700">Flight B-C Departure Time:</label>
+                <input type="datetime-local" id="flight4-departure" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
+            </div>
+            <button type="button" onclick="calculateTransferTime()" class="w-full bg-blue-500 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-600 transition duration-300">Calculate Transfer Time</button>
+        </form>
+        <div id="result" class="mt-6 text-center"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
